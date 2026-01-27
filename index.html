@@ -332,21 +332,16 @@
       <button id="tuner-toggle" type="button">Tuner</button>
     </div>
 
-    <model-viewer
-      id="cellViewer"
-      shadow-intensity="1"
-      ar
-      ar-scale="auto"
-      ar-modes="webxr scene-viewer quick-look"
-      camera-controls
-      disable-pan
-      touch-action="none"
-      interaction-prompt="none"
-      camera-target="auto auto auto"
-      camera-orbit="0deg 70deg 105%"
-      min-camera-orbit="auto auto 80%"
-      max-camera-orbit="auto auto 140%"
-    >
+<model-viewer
+  id="cellViewer"
+  ar
+  ar-modes="webxr scene-viewer quick-look"
+  ar-scale="auto"
+  camera-controls
+  interaction-prompt="none"
+  shadow-intensity="1"
+>
+
       <button slot="ar-button" id="ar-button">View in your space</button>
 
       <!-- Nucleus -->
