@@ -20,6 +20,7 @@
         overflow: hidden;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: #111;
+        touch-action: none; /* don't let browser steal gestures */
       }
 
       model-viewer {
@@ -30,6 +31,7 @@
         background-color: #111;
         overflow: hidden;
         display: none;
+        touch-action: none; /* allow pinch/rotate gestures */
       }
 
       /* ===== Landing ===== */
@@ -98,14 +100,14 @@
         background: rgba(66,133,244,0.10);
       }
 
-      /* ===== Topbar controls (model select + tuner) ===== */
+      /* ===== Topbar controls ===== */
       #topbar {
         position: fixed;
         top: calc(env(safe-area-inset-top) + 10px);
         left: 10px;
         right: 10px;
         z-index: 10011;
-        display: none; /* show after selection */
+        display: none;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
@@ -235,6 +237,7 @@
         position: relative;
         --hotspot-scale: 1;
         transform: translate(-50%, -50%) scale(var(--hotspot-scale));
+        touch-action: none;
       }
 
       .hotspot-anchor-dot {
@@ -294,6 +297,11 @@
       model-viewer[ar-status="session-started"] .hotspot-line { height: 30px; }
       model-viewer[ar-status="session-started"] .hotspot-description { display: none !important; }
 
+      /* CRITICAL: in AR, let pinch/rotate gestures reach the viewer */
+      model-viewer[ar-status="session-started"] .hotspot {
+        pointer-events: none;
+      }
+
       /* ========================
          HOTSPOT TUNER PANEL
          ======================== */
@@ -336,9 +344,10 @@
         background: rgba(0, 0, 0, 0.65);
         color: #fff;
 
-        display: none; /* only in AR */
+        display: none;
         gap: 10px;
         align-items: center;
+        pointer-events: auto;
       }
 
       model-viewer[ar-status="session-started"] ~ #ar-rotate-bar {
@@ -351,14 +360,12 @@
         white-space: nowrap;
       }
 
-      #ar-rotate {
-        width: 100%;
-      }
+      #ar-rotate { width: 100%; }
     </style>
   </head>
 
   <body>
-    <!-- Landing (no models loaded until user chooses) -->
+    <!-- Landing -->
     <div id="landing">
       <div class="card">
         <h1>Select a cell type</h1>
@@ -367,7 +374,7 @@
       </div>
     </div>
 
-    <!-- Topbar (shown after selection) -->
+    <!-- Topbar -->
     <div id="topbar">
       <div id="model-menu"></div>
       <button id="tuner-toggle" type="button">Tuner</button>
@@ -380,7 +387,7 @@
       ar-modes="webxr scene-viewer quick-look"
       camera-controls
       disable-pan
-      touch-action="pan-y"
+      touch-action="none"
       interaction-prompt="none"
       camera-target="auto auto auto"
       camera-orbit="0deg 70deg 105%"
@@ -476,13 +483,13 @@
       <button id="ar-failure">AR is not tracking!</button>
     </model-viewer>
 
-    <!-- User-facing AR rotation slider -->
+    <!-- AR rotation slider -->
     <div id="ar-rotate-bar">
       <div class="label">Rotate</div>
       <input id="ar-rotate" type="range" min="-180" max="180" step="1" value="0" />
     </div>
 
-    <!-- Hotspot tuner (toggle with on-screen button) -->
+    <!-- Hotspot tuner -->
     <div id="hotspot-controls">
       <h3>Hotspot Position Tuner</h3>
 
@@ -547,59 +554,56 @@
           { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb", usdz: "./neutrophil.usdz" },
           { key: "basophil",   label: "Basophil",   glb: "./basophil.glb",   usdz: "./basophil.usdz" },
           { key: "eosinophil", label: "Eosinophil", glb: "./eosinophil.glb", usdz: "./eosinophil.usdz" },
-          { key: "monocyte", label: "Monocyte", glb: "./monocyte.glb", usdz: "./monocyte.usdz" },
+          { key: "monocyte",   label: "Monocyte",   glb: "./monocyte.glb",   usdz: "./monocyte.usdz" },
           { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb", usdz: "./lymphocyte.usdz" },
         ];
 
-          const HOTSPOTS_ALL = ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"];
+        const HOTSPOTS_ALL = ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"];
 
-          const HOTSPOTS_ENABLED = {
-              neutrophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
-              basophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
-              eosinophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
-              monocyte: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
-              lymphocyte: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome"], // no granules
-          };
-
+        const HOTSPOTS_ENABLED = {
+          neutrophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
+          basophil:   ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
+          eosinophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
+          monocyte:   ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
+          lymphocyte: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome"], // no granules
+        };
 
         const HOTSPOT_PRESETS = {
-            neutrophil: {
-                "hotspot-nucleus": [-1.300, 2.000, -2.200],
-                "hotspot-golgi": [0.900, 0.600, -0.100],
-                "hotspot-mito": [3.600, 0.200, -3.600],
-                "hotspot-ribosome": [2.300, -0.200, -4.300],
-                "hotspot-granules": [-2.900, -1.600, 5.800],
-            },
-
-            basophil: {
-                "hotspot-nucleus": [-1.300, 2.000, -2.200],
-                "hotspot-golgi": [0.900, 0.600, -0.100],
-                "hotspot-mito": [3.600, 0.200, -3.600],
-                "hotspot-ribosome": [3.800, 0.700, -7.100],
-                "hotspot-granules": [-4.200, 1.600, 3.900],
-            },
-
-            eosinophil: {
-                "hotspot-nucleus": [-1.300, 2.000, -2.200],
-                "hotspot-golgi": [0.900, 0.600, -0.100],
-                "hotspot-mito": [3.600, 0.200, -3.600],
-                "hotspot-ribosome": [4.700, -2.400, -0.600],
-                "hotspot-granules": [-2.900, -1.600, 5.800],
-              },
-            monocyte: {
-                "hotspot-nucleus": [-1.300, 2.000, -2.200],
-                "hotspot-golgi": [0.900, 0.600, -0.100],
-                "hotspot-mito": [3.600, 0.200, -3.600],
-                "hotspot-ribosome": [5.100, -0.800, -3.100],
-                "hotspot-granules": [-3.400, -1.800, 6.400],
-            },
-            lymphocyte: {
-                "hotspot-nucleus": [-1.300, 2.000, -2.200],
-                "hotspot-golgi": [-0.200, 1.900, -6.200],
-                "hotspot-mito": [3.500, -0.100, -5.600],
-                "hotspot-ribosome": [3.500, -2.100, -6.500],
-            }
-          };
+          neutrophil: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [0.900, 0.600, -0.100],
+            "hotspot-mito":    [3.600, 0.200, -3.600],
+            "hotspot-ribosome":[2.300, -0.200, -4.300],
+            "hotspot-granules":[-2.900, -1.600, 5.800],
+          },
+          basophil: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [0.900, 0.600, -0.100],
+            "hotspot-mito":    [3.600, 0.200, -3.600],
+            "hotspot-ribosome":[3.800, 0.700, -7.100],
+            "hotspot-granules":[-4.200, 1.600, 3.900],
+          },
+          eosinophil: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [0.900, 0.600, -0.100],
+            "hotspot-mito":    [3.600, 0.200, -3.600],
+            "hotspot-ribosome":[4.700, -2.400, -0.600],
+            "hotspot-granules":[-2.900, -1.600, 5.800],
+          },
+          monocyte: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [0.900, 0.600, -0.100],
+            "hotspot-mito":    [3.600, 0.200, -3.600],
+            "hotspot-ribosome":[5.100, -0.800, -3.100],
+            "hotspot-granules":[-3.400, -1.800, 6.400],
+          },
+          lymphocyte: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [-0.200, 1.900, -6.200],
+            "hotspot-mito":    [3.500, -0.100, -5.600],
+            "hotspot-ribosome":[3.500, -2.100, -6.500],
+          },
+        };
 
         let activeKey = null;
 
@@ -637,27 +641,27 @@
           }
         }
 
-          function applyHotspotPresetFor(key) {
-              const preset = HOTSPOT_PRESETS[key] || {};
-              const enabled = new Set(HOTSPOTS_ENABLED[key] || HOTSPOTS_ALL);
+        function applyHotspotPresetFor(key) {
+          const preset = HOTSPOT_PRESETS[key] || {};
+          const enabled = new Set(HOTSPOTS_ENABLED[key] || HOTSPOTS_ALL);
 
-              Object.entries(preset).forEach(([hotspotId, xyz]) => {
-                  if (!enabled.has(hotspotId)) return;
-                  const [x, y, z] = xyz;
-                  setHotspotPosition(hotspotId, x, y, z);
-              });
-          }
+          Object.entries(preset).forEach(([hotspotId, xyz]) => {
+            if (!enabled.has(hotspotId)) return;
+            const [x, y, z] = xyz;
+            setHotspotPosition(hotspotId, x, y, z);
+          });
+        }
 
-          function setHotspotVisible(hotspotId, visible) {
-              const el = document.getElementById(hotspotId);
-              if (!el) return;
-              el.style.display = visible ? "" : "none";
-          }
+        function setHotspotVisible(hotspotId, visible) {
+          const el = document.getElementById(hotspotId);
+          if (!el) return;
+          el.style.display = visible ? "" : "none";
+        }
 
-          function applyHotspotVisibilityFor(key) {
-              const enabled = new Set(HOTSPOTS_ENABLED[key] || []);
-              HOTSPOTS_ALL.forEach(id => setHotspotVisible(id, enabled.has(id)));
-          }
+        function applyHotspotVisibilityFor(key) {
+          const enabled = new Set(HOTSPOTS_ENABLED[key] || []);
+          HOTSPOTS_ALL.forEach(id => setHotspotVisible(id, enabled.has(id)));
+        }
 
         // ---------- tuner ----------
         function initSection(sectionEl) {
@@ -692,18 +696,17 @@
           update();
         }
 
-          function initAllSections() {
-              document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(section => {
-                  const hotspotId = section.getAttribute("data-hotspot");
-                  const el = document.getElementById(hotspotId);
-                  const visible = el && el.style.display !== "none";
+        function initAllSections() {
+          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(section => {
+            const hotspotId = section.getAttribute("data-hotspot");
+            const el = document.getElementById(hotspotId);
+            const visible = el && el.style.display !== "none";
 
-                  section.style.display = visible ? "" : "none";
-                  if (visible) initSection(section);
-              });
-          }
+            section.style.display = visible ? "" : "none";
+            if (visible) initSection(section);
+          });
+        }
 
-        // Toggle tuner with on-screen button
         tunerToggle.addEventListener("click", () => {
           tunerPanel.classList.toggle("is-open");
         });
@@ -741,11 +744,19 @@
           applyModelYaw(yaw);
         });
 
+        // IMPORTANT: don't constantly reset orientation in AR
+        let inAR = false;
         viewer.addEventListener("ar-status", () => {
           const status = viewer.getAttribute("ar-status");
-          if (status === "session-started" || status === "not-presenting") {
-            arRotate.value = "0";
-            applyModelYaw(0);
+
+          if (status === "session-started") {
+            if (!inAR) {
+              arRotate.value = "0";
+              applyModelYaw(0);
+            }
+            inAR = true;
+          } else if (status === "not-presenting") {
+            inAR = false;
           }
         });
 
@@ -758,8 +769,7 @@
 
           modelMenu.querySelectorAll("button[data-model]").forEach(btn => {
             btn.addEventListener("click", () => {
-              const key = btn.getAttribute("data-model"); //label
-              selectModel(key);
+              selectModel(btn.getAttribute("data-model"));
             });
           });
         }
@@ -769,27 +779,23 @@
           if (!m) return;
 
           setError(null);
-            activeKey = key;
+          activeKey = key;
 
           applyHotspotVisibilityFor(activeKey);
 
-          // Show viewer UI
           landing.style.display = "none";
           viewer.style.display = "block";
           topbar.style.display = "flex";
           renderModelMenu();
 
-          // Swap sources
           viewer.removeAttribute("src");
           viewer.removeAttribute("ios-src");
 
-          // Force a fresh load next frame
           requestAnimationFrame(() => {
             viewer.setAttribute("src", m.glb);
             if (isIOS) viewer.setAttribute("ios-src", m.usdz);
           });
 
-          // Re-init after load (updateHotspot safest after load)
           viewer.addEventListener("load", () => {
             applyHotspotPresetFor(activeKey);
             initAllSections();
@@ -815,13 +821,11 @@
           });
         }
 
-        // Initial state: landing only, no model loaded
         buildLanding();
         topbar.style.display = "none";
         viewer.style.display = "none";
         tunerPanel.classList.remove("is-open");
 
-        // Keep scale updates
         viewer.addEventListener("camera-change", updateHotspotScale);
       });
     </script>
