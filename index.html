@@ -34,7 +34,6 @@
         background-color: #111;
         overflow: hidden;
         display: none;
-        touch-action: pan-y pinch-zoom;
       }
 
       /* ===== Landing ===== */
@@ -304,13 +303,12 @@
     <model-viewer
       id="cellViewer"
       ar
-      ar-modes="webxr scene-viewer quick-look"
+      ar-modes="webxr"
       ar-placement="floor"
       ar-scale="auto"
       camera-controls
       interaction-prompt="none"
       shadow-intensity="1"
-      touch-action="pan-y pinch-zoom"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
@@ -611,6 +609,12 @@
             const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
             setError(`Model failed to load.\nSelected: ${m.label}\nSRC: ${m.glb}\n${detail}`);
           }, { once: true });
+
+	viewer.addEventListener("ar-status", () => {
+  	    const s = viewer.getAttribute("ar-status");
+  	    console.log("ar-status:", s);
+        });
+
         }
 
         function buildLanding() {
