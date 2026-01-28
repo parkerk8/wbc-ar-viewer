@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>3D Hotspots + Scene Viewer AR (AR-only scale)</title>
+    <title>3D Hotspots + Scene Viewer AR (same file paths)</title>
 
     <script type="module" src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
 
@@ -121,7 +121,6 @@
         height: 100dvh;
         background: #111;
         display: none;
-        touch-action: manipulation;
       }
 
       /* ===== AR launcher (hidden but present) ===== */
@@ -244,14 +243,13 @@
     <div id="landing">
       <div class="card">
         <h1>Select a cell type</h1>
-        <p>3D view keeps hotspots. AR launches via Scene Viewer with AR-only scaling.</p>
+        <p>3D view keeps hotspots. AR launches via Scene Viewer using the same GLB paths as before.</p>
         <div class="grid" id="landing-grid"></div>
       </div>
     </div>
 
     <div id="topbar">
       <div id="model-menu"></div>
-      <div style="pointer-events:auto; color:#fff; opacity:.8; font-size:12px;"></div>
     </div>
 
     <!-- 3D viewer (hotspots live here) -->
@@ -317,7 +315,7 @@
       </button>
     </model-viewer>
 
-    <!-- Hidden AR launcher. No hotspots. -->
+    <!-- Hidden AR launcher -->
     <model-viewer
       id="viewerAR"
       ar
@@ -328,7 +326,6 @@
     ></model-viewer>
 
     <button id="enter-ar" type="button">View in your space</button>
-
     <div id="errorbox"></div>
 
     <script>
@@ -342,22 +339,18 @@
         const enterAR = document.getElementById("enter-ar");
         const errorbox = document.getElementById("errorbox");
 
-        // Set this to 0.05 for 5% (you asked for 5%).
-        // If Scene Viewer ignores runtime scale on your device/version, you must use *_ar.glb files below.
+        // Attempted Scene Viewer default size (not guaranteed on all devices/versions)
         const AR_SCALE = 0.05;
 
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-        // IMPORTANT:
-        // - glb3d is the "normal" model for your hotspot view.
-        // - glbAR is OPTIONAL but recommended: a pre-scaled model for Scene Viewer.
-        //   If you don't have *_ar.glb files yet, leave glbAR null to reuse glb3d.
+        // EXACTLY your original paths
         const MODELS = [
-          { key: "neutrophil", label: "Neutrophil", glb3d: "./neutrophil.glb",  glbAR: "./neutrophil_ar.glb",  usdz: "./neutrophil.usdz" },
-          { key: "basophil",   label: "Basophil",   glb3d: "./basophil.glb",    glbAR: "./basophil_ar.glb",    usdz: "./basophil.usdz" },
-          { key: "eosinophil", label: "Eosinophil", glb3d: "./eosinophil.glb",  glbAR: "./eosinophil_ar.glb",  usdz: "./eosinophil.usdz" },
-          { key: "monocyte",   label: "Monocyte",   glb3d: "./monocyte.glb",    glbAR: "./monocyte_ar.glb",    usdz: "./monocyte.usdz" },
-          { key: "lymphocyte", label: "Lymphocyte", glb3d: "./lymphocyte.glb",  glbAR: "./lymphocyte_ar.glb",  usdz: "./lymphocyte.usdz" },
+          { key: "neutrophil",  label: "Neutrophil",  glb: "./neutrophil.glb",  usdz: "./neutrophil.usdz" },
+          { key: "basophil",    label: "Basophil",    glb: "./basophil.glb",    usdz: "./basophil.usdz" },
+          { key: "eosinophil",  label: "Eosinophil",  glb: "./eosinophil.glb",  usdz: "./eosinophil.usdz" },
+          { key: "monocyte",    label: "Monocyte",    glb: "./monocyte.glb",    usdz: "./monocyte.usdz" },
+          { key: "lymphocyte",  label: "Lymphocyte",  glb: "./lymphocyte.glb",  usdz: "./lymphocyte.usdz" },
         ];
 
         const HOTSPOT_PRESETS = {
@@ -448,32 +441,27 @@
           enterAR.style.display = "block";
           renderModelMenu();
 
-          // 3D viewer always uses glb3d so hotspots stay aligned.
+          // 3D uses the same path as always
           viewer3d.removeAttribute("src");
-          requestAnimationFrame(() => viewer3d.setAttribute("src", m.glb3d));
+          requestAnimationFrame(() => viewer3d.setAttribute("src", m.glb));
 
-          // AR launcher uses glbAR if present, otherwise glb3d.
-          const arSrc = m.glbAR || m.glb3d;
+          // AR launcher uses the same path as always (but we set absolute on launch)
           viewerAR.removeAttribute("src");
-          requestAnimationFrame(() => viewerAR.setAttribute("src", arSrc));
+          requestAnimationFrame(() => viewerAR.setAttribute("src", m.glb));
 
-          // iOS kept here in case you later re-enable quick-look; scene-viewer is Android.
           viewerAR.removeAttribute("ios-src");
-          if (isIOS && m.usdz) viewerAR.setAttribute("ios-src", m.usdz);
+          if (isIOS) viewerAR.setAttribute("ios-src", m.usdz);
 
-          // Apply hotspot preset after 3D model loads.
-          viewer3d.addEventListener("load", () => {
-            applyHotspotPresetFor(activeKey);
-          }, { once: true });
+          viewer3d.addEventListener("load", () => applyHotspotPresetFor(activeKey), { once: true });
 
-          // Basic load error reporting
           viewer3d.addEventListener("error", (ev) => {
             const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
-            setError(`3D model failed to load.\n${m.label}\n${m.glb3d}\n${detail}`);
+            setError(`3D model failed to load.\n${m.label}\n${m.glb}\n${detail}`);
           }, { once: true });
+
           viewerAR.addEventListener("error", (ev) => {
             const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
-            setError(`AR model failed to load.\n${m.label}\n${arSrc}\n${detail}`);
+            setError(`AR launcher model failed to load.\n${m.label}\n${m.glb}\n${detail}`);
           }, { once: true });
         }
 
@@ -487,32 +475,31 @@
           });
         }
 
-        // Launch Scene Viewer AR with an AR-only scale attempt.
-        // If your device/version ignores runtime transform, use *_ar.glb files above.
+        // Launch Scene Viewer AR (same file paths as always)
         enterAR.addEventListener("click", async () => {
           if (!activeKey) return;
           const m = MODELS.find(x => x.key === activeKey);
           if (!m) return;
 
-          // Force AR-only scale on the AR launcher element right before handoff
+          // Apply scale to the AR launcher element right before handoff (may be ignored by Scene Viewer)
           const s = `${AR_SCALE} ${AR_SCALE} ${AR_SCALE}`;
           viewerAR.setAttribute("scale", s);
 
-          // Ensure AR launcher is pointing at the AR src (in case you changed models)
-          const arSrc = m.glbAR || m.glb3d;
-          if (viewerAR.getAttribute("src") !== arSrc) viewerAR.setAttribute("src", arSrc);
+          // Make AR src absolute to avoid Scene Viewer resolving issues with "./"
+          const absGlb = new URL(m.glb, window.location.href).href;
+          viewerAR.setAttribute("src", absGlb);
 
           try {
             await viewerAR.activateAR();
           } catch (e) {
             setError(`AR failed to launch.\n${String(e)}`);
           } finally {
-            // Reset AR launcher transform so it never affects your 3D hotspot alignment.
+            // Put it back to your original relative path for consistency in your app
+            viewerAR.setAttribute("src", m.glb);
             viewerAR.removeAttribute("scale");
           }
         });
 
-        // Initial state
         buildLanding();
       });
     </script>
