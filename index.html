@@ -290,19 +290,38 @@
       <button id="tuner-toggle" type="button">Tuner</button>
     </div>
 
-    <model-viewer
-      id="cellViewer"
-      ar
-      ar-modes="scene-viewer quick-look"
-      ar-placement="floor"
-      ar-scale="auto"
-      camera-controls
-      interaction-prompt="none"
-      shadow-intensity="1"
-      touch-action="none"
-      scale="0.05 0.05 0.05">
-    >
-      <button slot="ar-button" id="ar-button">View in your space</button>
+    <!-- 3D VIEWER (hotspots + normal scale) -->
+<model-viewer
+  id="viewer3d"
+  camera-controls
+  interaction-prompt="none"
+  src="./neutrophil.glb"
+  shadow-intensity="1"
+  style="position:fixed; inset:0; width:100vw; height:100dvh;"
+>
+  <!-- your hotspots live here -->
+</model-viewer>
+
+<!-- AR LAUNCHER (hidden, only used to open Scene Viewer) -->
+<model-viewer
+  id="viewerAR"
+  ar
+  ar-modes="scene-viewer"
+  ar-placement="floor"
+  ar-scale="auto"
+  src="./neutrophil.glb"
+  scale="0.05 0.05 0.05"
+  style="position:fixed; width:1px; height:1px; opacity:0; pointer-events:none;"
+></model-viewer>
+
+<!-- YOUR visible AR button (outside model-viewer) -->
+<button id="enter-ar"
+  style="position:fixed; left:50%; transform:translateX(-50%);
+         bottom:20px; z-index:99999; height:48px; padding:0 22px;
+         border-radius:999px; border:1px solid #dadce0; background:#fff;
+         font-weight:700;">
+  View in your space
+</button>
 
       <!-- Nucleus -->
       <button
@@ -490,6 +509,22 @@
         };
 
         let activeKey = null;
+ const viewer3d = document.getElementById("viewer3d");
+  const viewerAR = document.getElementById("viewerAR");
+  const enter = document.getElementById("enter-ar");
+
+  // whenever you change models, keep both viewers in sync:
+  function setModel(glbUrl) {
+    viewer3d.src = glbUrl;
+    viewerAR.src = glbUrl; // AR uses same model, but scaled down in AR only
+  }
+
+  enter.addEventListener("click", async () => {
+    // launches Scene Viewer from the hidden AR viewer
+    if (typeof viewerAR.activateAR === "function") {
+      await viewerAR.activateAR();
+    }
+  });
 
         function setError(msg) {
           if (!msg) { errorbox.style.display = "none"; errorbox.textContent = ""; return; }
