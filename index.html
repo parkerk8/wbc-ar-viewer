@@ -295,16 +295,18 @@
       <button id="tuner-toggle" type="button">Tuner</button>
     </div>
 
-    <model-viewer
-      id="cellViewer"
-      ar
-      ar-modes="webxr scene-viewer quick-look"
-      ar-placement="floor"
-      ar-scale="auto"
-      camera-controls
-      interaction-prompt="none"
-      shadow-intensity="1"
-    >
+<model-viewer
+  id="cellViewer"
+  ar
+  ar-modes="webxr"
+  ar-placement="floor"
+  ar-scale="auto"
+  touch-action="none"
+  camera-controls
+  interaction-prompt="none"
+  src="./neutrophil.glb"
+></model-viewer>
+
       <button slot="ar-button" id="ar-button">View in your space</button>
 
       <!-- Nucleus -->
