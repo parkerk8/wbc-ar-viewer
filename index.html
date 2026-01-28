@@ -10,7 +10,7 @@
 
     <script
       type="module"
-      src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"
+      src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js"
     ></script>
 
     <style>
@@ -34,7 +34,7 @@
         background-color: #111;
         overflow: hidden;
         display: none;
-        touch-action: none;
+        touch-action: pan-y pinch-zoom;
       }
 
       /* ===== Landing ===== */
@@ -258,6 +258,7 @@
       model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
       model-viewer[ar-status="session-started"] .hotspot-line { height: 30px; }
       model-viewer[ar-status="session-started"] .hotspot-description { display: none !important; }
+      model-viewer[ar-status="session-started"] .hotspot * { pointer-events: none !important; }
 
       /* ========================
          HOTSPOT TUNER PANEL
@@ -309,7 +310,7 @@
       camera-controls
       interaction-prompt="none"
       shadow-intensity="1"
-      touch-action="none"
+      touch-action="pan-y pinch-zoom"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
