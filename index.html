@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>AR Model Viewer (WebXR-only Debug)</title>
+    <title>AR Model Viewer with Hotspots (Mobile Debug)</title>
 
     <script type="module" src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
 
@@ -21,10 +21,12 @@
       }
 
       model-viewer {
+        position: fixed;
         inset: 0;
         width: 100vw;
         height: 100dvh;
-        background: #111;
+        background-color: #111;
+        overflow: hidden;
         display: none;
       }
 
@@ -156,7 +158,7 @@
         left: 50%;
         transform: translateX(-50%);
         bottom: calc(env(safe-area-inset-bottom) + 20px);
-        z-index: 10;
+        z-index: 200000; /* keep it above overlays, just in case */
 
         background-color: #fff;
         padding: 0 26px;
@@ -247,11 +249,17 @@
         pointer-events: none !important;
       }
 
-      /* ===== Capability panel (visible in 3D mode) ===== */
-      #capPanel {
+      /* ===== HUD / Capability panel =====
+         - Move to TOP so it never blocks AR button
+         - Make untouchable so it can’t steal taps
+         - Auto-hide during AR (JS toggles .hidden)
+      */
+      #capPanel, #hud {
         position: fixed;
         left: 10px;
-        bottom: 10px;
+        right: auto;
+        top: calc(env(safe-area-inset-top) + 10px);
+        bottom: auto;
         z-index: 10050;
         max-width: calc(100vw - 20px);
         padding: 10px 12px;
@@ -261,12 +269,15 @@
         color: #fff;
         font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
         white-space: pre-wrap;
+        pointer-events: none !important; /* KEY */
       }
-      #capPanel.bad {
-        background: rgba(120, 20, 20, 0.82);
-        border-color: rgba(255,255,255,0.22);
+      #hud {
+        top: calc(env(safe-area-inset-top) + 110px);
+        z-index: 10049;
+        background: rgba(0,0,0,0.72);
       }
-      #capPanel.hidden { display: none; }
+      #capPanel.bad { background: rgba(120, 20, 20, 0.82); border-color: rgba(255,255,255,0.22); }
+      #capPanel.hidden, #hud.hidden { display: none; }
     </style>
   </head>
 
@@ -274,7 +285,7 @@
     <div id="landing">
       <div class="card">
         <h1>Select a cell type</h1>
-        <p>WebXR-only AR is enabled in this build.</p>
+        <p>Choose a model to open the viewer.</p>
         <div class="grid" id="landing-grid"></div>
       </div>
     </div>
@@ -284,53 +295,77 @@
       <button id="tuner-toggle" type="button">Tuner</button>
     </div>
 
-    <!-- WebXR ONLY (no Scene Viewer / Quick Look) -->
     <model-viewer
       id="cellViewer"
       ar
-      ar-modes="webxr"
+      ar-modes="webxr scene-viewer quick-look"
       ar-placement="floor"
-      ar-scale="fixed"
+      ar-scale="auto"
       camera-controls
       interaction-prompt="none"
       shadow-intensity="1"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
-      <!-- Hotspots -->
+      <!-- Nucleus -->
       <button id="hotspot-nucleus" slot="hotspot-nucleus" class="hotspot"
         data-position="-1.300 2.000 -2.200" data-normal="0.973 -0.164 0.164">
-        <div class="hotspot-anchor-dot"></div><div class="hotspot-line"></div>
-        <div class="hotspot-label">Nucleus <span class="hotspot-description">Contains genetic material and controls cell activities.</span></div>
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Nucleus
+          <span class="hotspot-description">Contains genetic material and controls cell activities.</span>
+        </div>
       </button>
 
+      <!-- Golgi -->
       <button id="hotspot-golgi" slot="hotspot-golgi" class="hotspot"
         data-position="0.900 0.600 -0.100" data-normal="1.000 0.600 -0.700">
-        <div class="hotspot-anchor-dot"></div><div class="hotspot-line"></div>
-        <div class="hotspot-label">Golgi Complex <span class="hotspot-description">Packages and modifies proteins and lipids.</span></div>
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Golgi Complex
+          <span class="hotspot-description">Packages and modifies proteins and lipids.</span>
+        </div>
       </button>
 
+      <!-- Mito -->
       <button id="hotspot-mito" slot="hotspot-mito" class="hotspot"
         data-position="3.600 0.200 -3.600" data-normal="-0.842 -0.507 -0.181">
-        <div class="hotspot-anchor-dot"></div><div class="hotspot-line"></div>
-        <div class="hotspot-label">Mitochondrion <span class="hotspot-description">Produces energy (ATP) for the cell.</span></div>
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Mitochondrion
+          <span class="hotspot-description">Produces energy (ATP) for the cell.</span>
+        </div>
       </button>
 
+      <!-- Ribosome -->
       <button id="hotspot-ribosome" slot="hotspot-ribosome" class="hotspot"
         data-position="2.300 -0.200 -4.300" data-normal="-0.507 -0.181 0.842">
-        <div class="hotspot-anchor-dot"></div><div class="hotspot-line"></div>
-        <div class="hotspot-label">Ribosome <span class="hotspot-description">Site of protein synthesis.</span></div>
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Ribosome
+          <span class="hotspot-description">Site of protein synthesis.</span>
+        </div>
       </button>
 
+      <!-- Granules -->
       <button id="hotspot-granules" slot="hotspot-granules" class="hotspot"
         data-position="-2.900 -1.600 5.800" data-normal="0.521 0.181 -0.834">
-        <div class="hotspot-anchor-dot"></div><div class="hotspot-line"></div>
-        <div class="hotspot-label">Granules <span class="hotspot-description">Stored enzymes or molecules.</span></div>
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Granules
+          <span class="hotspot-description">Stored enzymes or molecules.</span>
+        </div>
       </button>
     </model-viewer>
 
     <div id="errorbox"></div>
     <div id="capPanel"></div>
+    <div id="hud"></div>
 
     <script>
       window.addEventListener("DOMContentLoaded", () => {
@@ -341,12 +376,8 @@
         const modelMenu = document.getElementById("model-menu");
         const errorbox = document.getElementById("errorbox");
         const capPanel = document.getElementById("capPanel");
+        const hud = document.getElementById("hud");
         const tunerToggle = document.getElementById("tuner-toggle");
-
-        // keep tuner button (you can wire it back later)
-        tunerToggle.addEventListener("click", () => {
-          // placeholder
-        });
 
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const ua = navigator.userAgent;
@@ -359,12 +390,76 @@
           { key: "lymphocyte",  label: "Lymphocyte",  glb: "./lymphocyte.glb",  usdz: "./lymphocyte.usdz" },
         ];
 
+        const HOTSPOT_PRESETS = {
+          neutrophil: {
+            "hotspot-nucleus": [-1.300,  2.000, -2.200],
+            "hotspot-golgi":   [ 0.900,  0.600, -0.100],
+            "hotspot-mito":    [ 3.600,  0.200, -3.600],
+            "hotspot-ribosome":[ 2.300, -0.200, -4.300],
+            "hotspot-granules":[-2.900, -1.600,  5.800],
+          },
+          basophil: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [ 0.900, 0.600, -0.100],
+            "hotspot-mito":    [ 3.600, 0.200, -3.600],
+            "hotspot-ribosome":[ 3.800, 0.700, -7.100],
+            "hotspot-granules":[-4.200, 1.600,  3.900],
+          },
+          eosinophil: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [ 0.900, 0.600, -0.100],
+            "hotspot-mito":    [ 3.600, 0.200, -3.600],
+            "hotspot-ribosome":[ 4.700,-2.400, -0.600],
+            "hotspot-granules":[-2.900,-1.600,  5.800],
+          },
+          monocyte: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [ 0.900, 0.600, -0.100],
+            "hotspot-mito":    [ 3.600, 0.200, -3.600],
+            "hotspot-ribosome":[ 5.100,-0.800, -3.100],
+            "hotspot-granules":[-3.400,-1.800,  6.400],
+          },
+          lymphocyte: {
+            "hotspot-nucleus": [-1.300, 2.000, -2.200],
+            "hotspot-golgi":   [-0.200, 1.900, -6.200],
+            "hotspot-mito":    [ 3.500,-0.100, -5.600],
+            "hotspot-ribosome":[ 3.500,-2.100, -6.500],
+          },
+        };
+
         let activeKey = null;
 
         function setError(msg) {
           if (!msg) { errorbox.style.display = "none"; errorbox.textContent = ""; return; }
           errorbox.style.display = "block";
           errorbox.textContent = msg;
+        }
+
+        function parseDataPosition(el) {
+          const raw = (el.getAttribute("data-position") || "").trim();
+          const parts = raw.split(/\s+/).map(Number);
+          if (parts.length === 3 && parts.every(Number.isFinite)) return parts;
+          return [0, 0, 0];
+        }
+
+        function setHotspotPosition(hotspotId, x, y, z) {
+          const el = document.getElementById(hotspotId);
+          if (!el) return;
+          const slotName = el.getAttribute("slot");
+          const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
+          el.setAttribute("data-position", posString);
+          if (typeof viewer.updateHotspot === "function" && slotName) {
+            viewer.updateHotspot({ name: slotName, position: posString });
+          }
+        }
+
+        function applyHotspotPresetFor(key) {
+          const preset = HOTSPOT_PRESETS[key];
+          if (!preset) return;
+          Object.entries(preset).forEach(([hotspotId, xyz]) => {
+            const [x, y, z] = xyz;
+            setHotspotPosition(hotspotId, x, y, z);
+          });
         }
 
         function renderModelMenu() {
@@ -395,9 +490,17 @@
 
           requestAnimationFrame(() => {
             viewer.setAttribute("src", m.glb);
-            // even though we force WebXR-only, keep ios-src in case you flip back later
             if (isIOS) viewer.setAttribute("ios-src", m.usdz);
           });
+
+          viewer.addEventListener("load", () => {
+            applyHotspotPresetFor(activeKey);
+          }, { once: true });
+
+          viewer.addEventListener("error", (ev) => {
+            const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
+            setError(`Model failed to load.\nSelected: ${m.label}\nSRC: ${m.glb}\n${detail}`);
+          }, { once: true });
         }
 
         function buildLanding() {
@@ -410,7 +513,7 @@
           });
         }
 
-        // Capability panel (works in 3D mode)
+        // ===== Capability panel (3D mode) =====
         function updateCapPanel(extra = "") {
           const arStatus = viewer.getAttribute("ar-status") || "(none)";
           const canActivateAR = !!viewer.canActivateAR;
@@ -430,37 +533,57 @@ UA: ${ua.slice(0, 80)}${ua.length > 80 ? "…" : ""}`;
 
           capPanel.textContent = msg;
 
-          // If WebXR can't activate, show it loud
           const bad = (!https || !isSecure || !canActivateAR);
           capPanel.classList.toggle("bad", bad);
-
-          if (bad) {
-            capPanel.classList.remove("hidden");
-          }
         }
 
-        // AR status changes
+        // ===== HUD: event counters (helps detect if touches reach model-viewer) =====
+        let pDown = 0, pMove = 0, tStart = 0, tMove = 0;
+        function updateHud(extra = "") {
+          const arStatus = viewer.getAttribute("ar-status") || "(none)";
+          const arMode = viewer.arMode || "(unknown)";
+          hud.textContent =
+`arMode: ${arMode}
+ar-status: ${arStatus}
+pointerdown: ${pDown}  pointermove: ${pMove}
+touchstart: ${tStart}  touchmove: ${tMove}
+${extra}`.trim();
+        }
+
+        viewer.addEventListener("pointerdown", () => { pDown++; updateHud(""); }, { passive: true });
+        viewer.addEventListener("pointermove", () => { pMove++; updateHud(""); }, { passive: true });
+        viewer.addEventListener("touchstart",  () => { tStart++; updateHud(""); }, { passive: true });
+        viewer.addEventListener("touchmove",   () => { tMove++; updateHud(""); }, { passive: true });
+
+        // Hide UI while AR is active + hide overlays so they never block AR button/gestures
         viewer.addEventListener("ar-status", () => {
           const status = viewer.getAttribute("ar-status");
           const inAR = status === "session-started";
 
-          // DOM overlays may disappear in AR on some devices/browsers;
-          // keep panel visible when possible, hide if you prefer.
-          // (Leaving visible helps if the browser supports WebXR DOM overlay.)
-          updateCapPanel("ar-status event fired");
-
-          // Hide top UI while in AR to avoid stealing gestures
           topbar.style.display = inAR ? "none" : (activeKey ? "flex" : "none");
+
+          capPanel.classList.toggle("hidden", inAR);
+          hud.classList.toggle("hidden", inAR);
+
+          updateCapPanel("ar-status event fired");
+          updateHud("ar-status event fired");
         });
+
+        // Keep panels updated in 3D mode
+        setInterval(() => {
+          const inAR = viewer.getAttribute("ar-status") === "session-started";
+          if (!inAR) {
+            updateCapPanel("");
+            updateHud("");
+          }
+        }, 400);
 
         // Initial
         buildLanding();
         topbar.style.display = "none";
         viewer.style.display = "none";
         updateCapPanel("ready");
-
-        // Refresh cap panel periodically while in 3D mode
-        setInterval(() => updateCapPanel(""), 500);
+        updateHud("ready");
       });
     </script>
   </body>
