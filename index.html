@@ -34,9 +34,7 @@
         background-color: #111;
         overflow: hidden;
         display: none;
-
-        /* CRITICAL: allow WebXR multi-touch gestures (rotate/scale) */
-        touch-action: pan-y;
+        touch-action: none;
       }
 
       /* ===== Landing ===== */
@@ -255,7 +253,7 @@
       .hotspot:hover .hotspot-description { display: inline; }
 
       /* AR MODE: smaller hotspots + hide descriptions (and keep them from stealing gestures) */
-      model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.55; }
+      model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.65; }
       model-viewer[ar-status="session-started"] .hotspot-label { padding: 6px 9px; font-size: 12px; }
       model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
       model-viewer[ar-status="session-started"] .hotspot-line { height: 30px; }
@@ -305,15 +303,13 @@
     <model-viewer
       id="cellViewer"
       ar
-      ar-modes="webxr scene-viewer quick-look"
+      ar-modes="scene-viewer quick-look"
       ar-placement="floor"
       ar-scale="auto"
       camera-controls
       interaction-prompt="none"
       shadow-intensity="1"
-
-      /* CRITICAL: allow WebXR multi-touch gestures */
-      touch-action="pan-y"
+      touch-action="none"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
@@ -499,7 +495,6 @@
             "hotspot-golgi":   [-0.200, 1.900, -6.200],
             "hotspot-mito":    [ 3.500,-0.100, -5.600],
             "hotspot-ribosome":[ 3.500,-2.100, -6.500],
-            // granules can stay hidden later if you want
           },
         };
 
