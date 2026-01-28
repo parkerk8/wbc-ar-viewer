@@ -2,10 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>3D Hotspots + Scene Viewer AR (same file paths)</title>
+    <title>AR Model Viewer with Hotspots</title>
 
-    <script type="module" src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
+    <script
+      type="module"
+      src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
+    ></script>
 
     <style>
       :not(:defined) > * { display: none; }
@@ -15,9 +17,19 @@
         padding: 0;
         width: 100%;
         height: 100%;
-        overflow: hidden;
+        overflow: hidden; /* kill page scroll */
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: #111;
+      }
+
+      model-viewer {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100dvh;
+        background-color: #111;
+        overflow: hidden;
+        display: none; /* hidden until a model is selected */
       }
 
       /* ===== Landing ===== */
@@ -44,15 +56,29 @@
         box-shadow: 0 10px 40px rgba(0,0,0,0.35);
       }
 
-      #landing h1 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
-      #landing p  { margin: 0 0 14px; opacity: 0.85; line-height: 1.45; font-size: 14px; }
+      #landing h1 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 650;
+        letter-spacing: 0.2px;
+      }
+
+      #landing p {
+        margin: 0 0 14px;
+        opacity: 0.85;
+        line-height: 1.45;
+        font-size: 14px;
+      }
 
       #landing .grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
       }
-      @media (max-width: 540px) { #landing .grid { grid-template-columns: 1fr; } }
+
+      @media (max-width: 540px) {
+        #landing .grid { grid-template-columns: 1fr; }
+      }
 
       .pick {
         cursor: pointer;
@@ -63,22 +89,23 @@
         color: #fff;
         text-align: left;
         transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
-        font-weight: 700;
+        font-weight: 650;
       }
+
       .pick:hover {
         transform: translateY(-1px);
         border-color: rgba(66,133,244,0.55);
         background: rgba(66,133,244,0.10);
       }
 
-      /* ===== Topbar controls ===== */
+      /* ===== Topbar controls (model select + tuner) ===== */
       #topbar {
         position: fixed;
         top: calc(env(safe-area-inset-top) + 10px);
         left: 10px;
         right: 10px;
         z-index: 10011;
-        display: none;
+        display: none; /* show after selection */
         align-items: center;
         justify-content: space-between;
         gap: 10px;
@@ -98,6 +125,7 @@
       }
 
       .model-btn {
+        pointer-events: auto;
         cursor: pointer;
         color: #fff;
         font-size: 13px;
@@ -107,31 +135,22 @@
         background: transparent;
         opacity: 0.9;
       }
+
       .model-btn.active {
         border-color: rgba(66,133,244,0.9);
         box-shadow: 0 0 0 2px rgba(66,133,244,0.15) inset;
         opacity: 1;
       }
 
-      /* ===== 3D viewer (visible) ===== */
-      #viewer3d {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100dvh;
-        background: #111;
-        display: none;
-      }
-
-      /* ===== AR launcher (hidden but present) ===== */
-      #viewerAR {
-        position: fixed;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-        pointer-events: none;
-        left: -9999px;
-        top: -9999px;
+      #tuner-toggle {
+        pointer-events: auto;
+        cursor: pointer;
+        color: #fff;
+        background: rgba(0,0,0,0.65);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 13px;
       }
 
       /* ===== Error banner ===== */
@@ -152,13 +171,12 @@
         white-space: pre-wrap;
       }
 
-      /* ===== AR button (external) ===== */
-      #enter-ar {
+      #ar-button {
         position: fixed;
         left: 50%;
         transform: translateX(-50%);
-        bottom: calc(env(safe-area-inset-bottom) + 18px);
-        z-index: 10020;
+        bottom: calc(env(safe-area-inset-bottom) + 20px);
+        z-index: 9999;
 
         background-color: #fff;
         padding: 0 26px;
@@ -167,17 +185,47 @@
         line-height: 48px;
 
         font-size: 16px;
-        font-weight: 700;
+        font-weight: 500;
         color: #4285f4;
 
         border-radius: 24px;
         border: 1px solid #dadce0;
         white-space: nowrap;
-        display: none;
+      }
+      #ar-button:active { background-color: #e8eaed; }
+      #ar-button:focus { outline: none; }
+      #ar-button:focus-visible { outline: 1px solid #4285f4; }
+
+      @keyframes circle {
+        from { transform: translateX(-50%) rotate(0deg) translateX(50px) rotate(0deg); }
+        to { transform: translateX(-50%) rotate(360deg) translateX(50px) rotate(-360deg); }
+      }
+      @keyframes elongate {
+        from { transform: translateX(100px); }
+        to { transform: translateX(-100px); }
       }
 
+      model-viewer > #ar-prompt {
+        position: absolute;
+        left: 50%;
+        bottom: 175px;
+        animation: elongate 2s infinite ease-in-out alternate;
+        display: none;
+      }
+      model-viewer[ar-status="session-started"] > #ar-prompt { display: block; }
+      model-viewer > #ar-prompt > img { animation: circle 4s linear infinite; }
+
+      model-viewer > #ar-failure {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 175px;
+        display: none;
+      }
+      model-viewer[ar-tracking="not-tracking"] > #ar-failure { display: block; }
+
       /* ========================
-         HOTSPOTS (3D only)
+         HOTSPOTS
          ======================== */
       .hotspot {
         border: none;
@@ -229,6 +277,8 @@
         white-space: nowrap;
       }
 
+      .hotspot-label::before { content: none; }
+
       .hotspot-description {
         display: none;
         margin-left: 4px;
@@ -236,32 +286,117 @@
         opacity: 0.9;
       }
       .hotspot:hover .hotspot-description { display: inline; }
+
+      /* AR MODE: smaller hotspots + hide descriptions */
+      model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.55; }
+      model-viewer[ar-status="session-started"] .hotspot-label { padding: 6px 9px; font-size: 12px; }
+      model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
+      model-viewer[ar-status="session-started"] .hotspot-line { height: 30px; }
+      model-viewer[ar-status="session-started"] .hotspot-description { display: none !important; }
+
+      /* ========================
+         HOTSPOT TUNER PANEL
+         ======================== */
+      #hotspot-controls {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        width: 320px;
+        max-height: 60vh;
+        overflow-y: auto;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.9);
+        color: #fff;
+        font-size: 12px;
+        z-index: 10000;
+        display: none;
+      }
+      #hotspot-controls.is-open { display: block; }
+
+      #hotspot-controls h3 { margin: 0 0 8px; font-size: 14px; }
+      #hotspot-controls label { display: block; margin: 2px 0; }
+      #hotspot-controls input[type="range"] { width: 100%; }
+      .hotspot-section { margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 6px; }
+      .hotspot-readout { margin-top: 2px; font-family: monospace; font-size: 11px; }
+
+      /* ========================
+         AR ROTATION SLIDER (USER-FACING)
+         ======================== */
+      #ar-rotate-bar {
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: calc(env(safe-area-inset-bottom) + 14px);
+        z-index: 10001;
+
+        width: min(560px, calc(100vw - 24px));
+        padding: 10px 12px;
+        border-radius: 16px;
+
+        background: rgba(0, 0, 0, 0.65);
+        color: #fff;
+
+        display: none; /* only in AR */
+        gap: 10px;
+        align-items: center;
+      }
+
+      model-viewer[ar-status="session-started"] ~ #ar-rotate-bar {
+        display: flex;
+      }
+
+      #ar-rotate-bar .label {
+        font-size: 12px;
+        opacity: 0.95;
+        white-space: nowrap;
+      }
+
+      #ar-rotate {
+        width: 100%;
+      }
     </style>
   </head>
 
   <body>
+    <!-- Landing (no models loaded until user chooses) -->
     <div id="landing">
       <div class="card">
         <h1>Select a cell type</h1>
-        <p>3D view keeps hotspots. AR launches via Scene Viewer using the same GLB paths as before.</p>
+        <p>Choose a model to open the viewer.</p>
         <div class="grid" id="landing-grid"></div>
       </div>
     </div>
 
+    <!-- Topbar (shown after selection) -->
     <div id="topbar">
       <div id="model-menu"></div>
+      <button id="tuner-toggle" type="button">Tuner</button>
     </div>
 
-    <!-- 3D viewer (hotspots live here) -->
     <model-viewer
-      id="viewer3d"
-      camera-controls
-      interaction-prompt="none"
+      id="cellViewer"
       shadow-intensity="1"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      camera-controls
+      disable-pan
+      touch-action="pan-y"
+      interaction-prompt="none"
+      camera-target="auto auto auto"
+      camera-orbit="0deg 70deg 105%"
+      min-camera-orbit="auto auto 80%"
+      max-camera-orbit="auto auto 140%"
     >
+      <button slot="ar-button" id="ar-button">View in your space</button>
+
       <!-- Nucleus -->
-      <button id="hotspot-nucleus" slot="hotspot-nucleus" class="hotspot"
-        data-position="-1.300 2.000 -2.200" data-normal="0.973 -0.164 0.164">
+      <button
+        id="hotspot-nucleus"
+        slot="hotspot-nucleus"
+        class="hotspot"
+        data-position="-1.300 2.000 -2.200"
+        data-normal="0.973 -0.164 0.164"
+      >
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
         <div class="hotspot-label">
@@ -270,9 +405,14 @@
         </div>
       </button>
 
-      <!-- Golgi -->
-      <button id="hotspot-golgi" slot="hotspot-golgi" class="hotspot"
-        data-position="0.900 0.600 -0.100" data-normal="1.000 0.600 -0.700">
+      <!-- Golgi Complex -->
+      <button
+        id="hotspot-golgi"
+        slot="hotspot-golgi"
+        class="hotspot"
+        data-position="0.900 0.600 -0.100"
+        data-normal="1.000 0.600 -0.700"
+      >
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
         <div class="hotspot-label">
@@ -281,9 +421,14 @@
         </div>
       </button>
 
-      <!-- Mito -->
-      <button id="hotspot-mito" slot="hotspot-mito" class="hotspot"
-        data-position="3.600 0.200 -3.600" data-normal="-0.842 -0.507 -0.181">
+      <!-- Mitochondrion -->
+      <button
+        id="hotspot-mito"
+        slot="hotspot-mito"
+        class="hotspot"
+        data-position="3.600 0.200 -3.600"
+        data-normal="-0.842 -0.507 -0.181"
+      >
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
         <div class="hotspot-label">
@@ -293,8 +438,13 @@
       </button>
 
       <!-- Ribosome -->
-      <button id="hotspot-ribosome" slot="hotspot-ribosome" class="hotspot"
-        data-position="2.300 -0.200 -4.300" data-normal="-0.507 -0.181 0.842">
+      <button
+        id="hotspot-ribosome"
+        slot="hotspot-ribosome"
+        class="hotspot"
+        data-position="2.300 -0.200 -4.300"
+        data-normal="-0.507 -0.181 0.842"
+      >
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
         <div class="hotspot-label">
@@ -303,120 +453,224 @@
         </div>
       </button>
 
-      <!-- Granules -->
-      <button id="hotspot-granules" slot="hotspot-granules" class="hotspot"
-        data-position="-2.900 -1.600 5.800" data-normal="0.521 0.181 -0.834">
+      <!-- Primary Granules -->
+      <button
+        id="hotspot-granules"
+        slot="hotspot-granules"
+        class="hotspot"
+        data-position="-2.900 -1.600 5.800"
+        data-normal="0.521 0.181 -0.834"
+      >
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
         <div class="hotspot-label">
-          Granules
-          <span class="hotspot-description">Stored enzymes or molecules.</span>
+          Primary Granules
+          <span class="hotspot-description">Granule structures with stored enzymes or molecules.</span>
         </div>
       </button>
+
+      <div id="ar-prompt">
+        <img src="hand.png" alt="Move phone to find surface" />
+      </div>
+
+      <button id="ar-failure">AR is not tracking!</button>
     </model-viewer>
 
-    <!-- Hidden AR launcher -->
-    <model-viewer
-      id="viewerAR"
-      ar
-      ar-modes="scene-viewer"
-      ar-placement="floor"
-      ar-scale="auto"
-      interaction-prompt="none"
-    ></model-viewer>
+    <!-- User-facing AR rotation slider -->
+    <div id="ar-rotate-bar">
+      <div class="label">Rotate</div>
+      <input id="ar-rotate" type="range" min="-180" max="180" step="1" value="0" />
+    </div>
 
-    <button id="enter-ar" type="button">View in your space</button>
+    <!-- Hotspot tuner (toggle with on-screen button) -->
+    <div id="hotspot-controls">
+      <h3>Hotspot Position Tuner</h3>
+
+      <div class="hotspot-section" data-hotspot="hotspot-nucleus">
+        <strong>Nucleus</strong>
+        <label>X <input type="range" class="hotspot-x" min="-15" max="15" step="0.1" /></label>
+        <label>Y <input type="range" class="hotspot-y" min="-15" max="15" step="0.1" /></label>
+        <label>Z <input type="range" class="hotspot-z" min="-15" max="15" step="0.1" /></label>
+        <div class="hotspot-readout"></div>
+      </div>
+
+      <div class="hotspot-section" data-hotspot="hotspot-golgi">
+        <strong>Golgi Complex</strong>
+        <label>X <input type="range" class="hotspot-x" min="-15" max="15" step="0.1" /></label>
+        <label>Y <input type="range" class="hotspot-y" min="-15" max="15" step="0.1" /></label>
+        <label>Z <input type="range" class="hotspot-z" min="-15" max="15" step="0.1" /></label>
+        <div class="hotspot-readout"></div>
+      </div>
+
+      <div class="hotspot-section" data-hotspot="hotspot-mito">
+        <strong>Mitochondrion</strong>
+        <label>X <input type="range" class="hotspot-x" min="-15" max="15" step="0.1" /></label>
+        <label>Y <input type="range" class="hotspot-y" min="-15" max="15" step="0.1" /></label>
+        <label>Z <input type="range" class="hotspot-z" min="-15" max="15" step="0.1" /></label>
+        <div class="hotspot-readout"></div>
+      </div>
+
+      <div class="hotspot-section" data-hotspot="hotspot-ribosome">
+        <strong>Ribosome</strong>
+        <label>X <input type="range" class="hotspot-x" min="-15" max="15" step="0.1" /></label>
+        <label>Y <input type="range" class="hotspot-y" min="-15" max="15" step="0.1" /></label>
+        <label>Z <input type="range" class="hotspot-z" min="-15" max="15" step="0.1" /></label>
+        <div class="hotspot-readout"></div>
+      </div>
+
+      <div class="hotspot-section" data-hotspot="hotspot-granules">
+        <strong>Primary Granules</strong>
+        <label>X <input type="range" class="hotspot-x" min="-15" max="15" step="0.1" /></label>
+        <label>Y <input type="range" class="hotspot-y" min="-15" max="15" step="0.1" /></label>
+        <label>Z <input type="range" class="hotspot-z" min="-15" max="15" step="0.1" /></label>
+        <div class="hotspot-readout"></div>
+      </div>
+    </div>
+
     <div id="errorbox"></div>
 
     <script>
       window.addEventListener("DOMContentLoaded", () => {
-        const viewer3d = document.getElementById("viewer3d");
-        const viewerAR = document.getElementById("viewerAR");
+        const viewer = document.getElementById("cellViewer");
+        const tunerPanel = document.getElementById("hotspot-controls");
+        const tunerToggle = document.getElementById("tuner-toggle");
+        const arRotate = document.getElementById("ar-rotate");
         const landing = document.getElementById("landing");
         const landingGrid = document.getElementById("landing-grid");
         const topbar = document.getElementById("topbar");
         const modelMenu = document.getElementById("model-menu");
-        const enterAR = document.getElementById("enter-ar");
         const errorbox = document.getElementById("errorbox");
-
-        // Attempted Scene Viewer default size (not guaranteed on all devices/versions)
-        const AR_SCALE = 0.05;
 
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-        // EXACTLY your original paths
         const MODELS = [
-          { key: "neutrophil",  label: "Neutrophil",  glb: "./neutrophil.glb",  usdz: "./neutrophil.usdz" },
-          { key: "basophil",    label: "Basophil",    glb: "./basophil.glb",    usdz: "./basophil.usdz" },
-          { key: "eosinophil",  label: "Eosinophil",  glb: "./eosinophil.glb",  usdz: "./eosinophil.usdz" },
-          { key: "monocyte",    label: "Monocyte",    glb: "./monocyte.glb",    usdz: "./monocyte.usdz" },
-          { key: "lymphocyte",  label: "Lymphocyte",  glb: "./lymphocyte.glb",  usdz: "./lymphocyte.usdz" },
+          { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb", usdz: "./neutrophil.usdz" },
+          { key: "basophil",   label: "Basophil",   glb: "./basophil.glb",   usdz: "./basophil.usdz" },
+          { key: "eosinophil", label: "Eosinophil", glb: "./eosinophil.glb", usdz: "./eosinophil.usdz" },
         ];
-
-        const HOTSPOT_PRESETS = {
-          neutrophil: {
-            "hotspot-nucleus": [-1.300,  2.000, -2.200],
-            "hotspot-golgi":   [ 0.900,  0.600, -0.100],
-            "hotspot-mito":    [ 3.600,  0.200, -3.600],
-            "hotspot-ribosome":[ 2.300, -0.200, -4.300],
-            "hotspot-granules":[-2.900, -1.600,  5.800],
-          },
-          basophil: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi":   [ 0.900, 0.600, -0.100],
-            "hotspot-mito":    [ 3.600, 0.200, -3.600],
-            "hotspot-ribosome":[ 3.800, 0.700, -7.100],
-            "hotspot-granules":[-4.200, 1.600,  3.900],
-          },
-          eosinophil: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi":   [ 0.900, 0.600, -0.100],
-            "hotspot-mito":    [ 3.600, 0.200, -3.600],
-            "hotspot-ribosome":[ 4.700,-2.400, -0.600],
-            "hotspot-granules":[-2.900,-1.600,  5.800],
-          },
-          monocyte: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi":   [ 0.900, 0.600, -0.100],
-            "hotspot-mito":    [ 3.600, 0.200, -3.600],
-            "hotspot-ribosome":[ 5.100,-0.800, -3.100],
-            "hotspot-granules":[-3.400,-1.800,  6.400],
-          },
-          lymphocyte: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi":   [-0.200, 1.900, -6.200],
-            "hotspot-mito":    [ 3.500,-0.100, -5.600],
-            "hotspot-ribosome":[ 3.500,-2.100, -6.500],
-          },
-        };
 
         let activeKey = null;
 
+        // ---------- helpers ----------
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
         function setError(msg) {
-          if (!msg) { errorbox.style.display = "none"; errorbox.textContent = ""; return; }
+          if (!msg) {
+            errorbox.style.display = "none";
+            errorbox.textContent = "";
+            return;
+          }
           errorbox.style.display = "block";
           errorbox.textContent = msg;
+        }
+
+        function parseDataPosition(el) {
+          const raw = (el.getAttribute("data-position") || "").trim();
+          const parts = raw.split(/\s+/).map(Number);
+          if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) return parts;
+          return [0, 0, 0];
         }
 
         function setHotspotPosition(hotspotId, x, y, z) {
           const el = document.getElementById(hotspotId);
           if (!el) return;
-          const slotName = el.getAttribute("slot");
+
+          const slotName = el.getAttribute("slot"); // e.g. "hotspot-nucleus"
           const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
+
           el.setAttribute("data-position", posString);
-          if (typeof viewer3d.updateHotspot === "function" && slotName) {
-            viewer3d.updateHotspot({ name: slotName, position: posString });
+
+          if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
+            viewer.updateHotspot({ name: slotName, position: posString });
           }
         }
 
-        function applyHotspotPresetFor(key) {
-          const preset = HOTSPOT_PRESETS[key];
-          if (!preset) return;
-          Object.entries(preset).forEach(([hotspotId, xyz]) => {
-            setHotspotPosition(hotspotId, xyz[0], xyz[1], xyz[2]);
+        // ---------- tuner ----------
+        function initSection(sectionEl) {
+          const hotspotId = sectionEl.getAttribute("data-hotspot");
+          const hotspotEl = document.getElementById(hotspotId);
+          if (!hotspotEl) return;
+
+          const [x0, y0, z0] = parseDataPosition(hotspotEl);
+
+          const xSlider = sectionEl.querySelector(".hotspot-x");
+          const ySlider = sectionEl.querySelector(".hotspot-y");
+          const zSlider = sectionEl.querySelector(".hotspot-z");
+          const readout = sectionEl.querySelector(".hotspot-readout");
+
+          xSlider.value = x0;
+          ySlider.value = y0;
+          zSlider.value = z0;
+
+          const update = () => {
+            const x = parseFloat(xSlider.value);
+            const y = parseFloat(ySlider.value);
+            const z = parseFloat(zSlider.value);
+
+            setHotspotPosition(hotspotId, x, y, z);
+            readout.textContent = `data-position="${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}"`;
+          };
+
+          xSlider.addEventListener("input", update);
+          ySlider.addEventListener("input", update);
+          zSlider.addEventListener("input", update);
+
+          update();
+        }
+
+        function initAllSections() {
+          document
+            .querySelectorAll("#hotspot-controls .hotspot-section")
+            .forEach(initSection);
+        }
+
+        // Toggle tuner with on-screen button
+        tunerToggle.addEventListener("click", () => {
+          tunerPanel.classList.toggle("is-open");
+        });
+
+        // ---------- hotspot scale with zoom (3D only) ----------
+        function updateHotspotScale() {
+          const arStatus = viewer.getAttribute("ar-status");
+          if (arStatus && arStatus !== "not-presenting" && arStatus !== "failed") return;
+
+          const orbit = viewer.getCameraOrbit();
+          const radius = orbit.radius;
+
+          const minRadius = 4;
+          const maxRadius = 18;
+
+          const t = clamp((radius - minRadius) / (maxRadius - minRadius), 0, 1);
+
+          const minScale = 1.0;
+          const maxScale = 2.2;
+
+          const scale = maxScale - (maxScale - minScale) * t;
+
+          viewer.querySelectorAll(".hotspot").forEach((el) => {
+            el.style.setProperty("--hotspot-scale", scale);
           });
         }
 
+        // ---------- AR rotation slider ----------
+        function applyModelYaw(deg) {
+          viewer.setAttribute("orientation", `0deg ${deg}deg 0deg`);
+        }
+
+        arRotate.addEventListener("input", () => {
+          const yaw = parseFloat(arRotate.value);
+          applyModelYaw(yaw);
+        });
+
+        viewer.addEventListener("ar-status", () => {
+          const status = viewer.getAttribute("ar-status");
+          if (status === "session-started" || status === "not-presenting") {
+            arRotate.value = "0";
+            applyModelYaw(0);
+          }
+        });
+
+        // ---------- model switching ----------
         function renderModelMenu() {
           modelMenu.innerHTML = MODELS.map(m => {
             const cls = m.key === activeKey ? "model-btn active" : "model-btn";
@@ -424,7 +678,10 @@
           }).join("");
 
           modelMenu.querySelectorAll("button[data-model]").forEach(btn => {
-            btn.addEventListener("click", () => selectModel(btn.getAttribute("data-model")));
+            btn.addEventListener("click", () => {
+              const key = btn.getAttribute("data-model");
+              selectModel(key);
+            });
           });
         }
 
@@ -435,72 +692,55 @@
           setError(null);
           activeKey = key;
 
+          // Show viewer UI
           landing.style.display = "none";
+          viewer.style.display = "block";
           topbar.style.display = "flex";
-          viewer3d.style.display = "block";
-          enterAR.style.display = "block";
           renderModelMenu();
 
-          // 3D uses the same path as always
-          viewer3d.removeAttribute("src");
-          requestAnimationFrame(() => viewer3d.setAttribute("src", m.glb));
+          // Swap sources
+          viewer.removeAttribute("src");
+          viewer.removeAttribute("ios-src");
 
-          // AR launcher uses the same path as always (but we set absolute on launch)
-          viewerAR.removeAttribute("src");
-          requestAnimationFrame(() => viewerAR.setAttribute("src", m.glb));
+          // Force a fresh load next frame
+          requestAnimationFrame(() => {
+            viewer.setAttribute("src", m.glb);
+            if (isIOS) viewer.setAttribute("ios-src", m.usdz);
+          });
 
-          viewerAR.removeAttribute("ios-src");
-          if (isIOS) viewerAR.setAttribute("ios-src", m.usdz);
-
-          viewer3d.addEventListener("load", () => applyHotspotPresetFor(activeKey), { once: true });
-
-          viewer3d.addEventListener("error", (ev) => {
-            const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
-            setError(`3D model failed to load.\n${m.label}\n${m.glb}\n${detail}`);
+          // Re-init after load (updateHotspot safest after load)
+          viewer.addEventListener("load", () => {
+            initAllSections();
+            updateHotspotScale();
           }, { once: true });
 
-          viewerAR.addEventListener("error", (ev) => {
+          viewer.addEventListener("error", (ev) => {
             const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
-            setError(`AR launcher model failed to load.\n${m.label}\n${m.glb}\n${detail}`);
+            setError(`Model failed to load.\nSelected: ${m.label}\nSRC: ${m.glb}\n${detail}`);
           }, { once: true });
         }
 
+        // ---------- landing ----------
         function buildLanding() {
           landingGrid.innerHTML = MODELS.map(m => `
             <button class="pick" type="button" data-model="${m.key}">${m.label}</button>
           `).join("");
 
           landingGrid.querySelectorAll("button[data-model]").forEach(btn => {
-            btn.addEventListener("click", () => selectModel(btn.getAttribute("data-model")));
+            btn.addEventListener("click", () => {
+              selectModel(btn.getAttribute("data-model"));
+            });
           });
         }
 
-        // Launch Scene Viewer AR (same file paths as always)
-        enterAR.addEventListener("click", async () => {
-          if (!activeKey) return;
-          const m = MODELS.find(x => x.key === activeKey);
-          if (!m) return;
-
-          // Apply scale to the AR launcher element right before handoff (may be ignored by Scene Viewer)
-          const s = `${AR_SCALE} ${AR_SCALE} ${AR_SCALE}`;
-          viewerAR.setAttribute("scale", s);
-
-          // Make AR src absolute to avoid Scene Viewer resolving issues with "./"
-          const absGlb = new URL(m.glb, window.location.href).href;
-          viewerAR.setAttribute("src", absGlb);
-
-          try {
-            await viewerAR.activateAR();
-          } catch (e) {
-            setError(`AR failed to launch.\n${String(e)}`);
-          } finally {
-            // Put it back to your original relative path for consistency in your app
-            viewerAR.setAttribute("src", m.glb);
-            viewerAR.removeAttribute("scale");
-          }
-        });
-
+        // Initial state: landing only, no model loaded
         buildLanding();
+        topbar.style.display = "none";
+        viewer.style.display = "none";
+        tunerPanel.classList.remove("is-open");
+
+        // Keep scale updates
+        viewer.addEventListener("camera-change", updateHotspotScale);
       });
     </script>
   </body>
