@@ -2,16 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <title>AR Model Viewer with Hotspots</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>AR Model Viewer with Hotspots (HUD Debug)</title>
 
-    <script
-      type="module"
-      src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js"
-    ></script>
+    <!-- model-viewer -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
 
     <style>
       :not(:defined) > * { display: none; }
@@ -34,6 +29,7 @@
         background-color: #111;
         overflow: hidden;
         display: none;
+        /* IMPORTANT: do NOT force touch-action:none here; it can break AR gestures on some builds */
       }
 
       /* ===== Landing ===== */
@@ -60,18 +56,8 @@
         box-shadow: 0 10px 40px rgba(0,0,0,0.35);
       }
 
-      #landing h1 {
-        margin: 0 0 8px;
-        font-size: 20px;
-        font-weight: 700;
-      }
-
-      #landing p {
-        margin: 0 0 14px;
-        opacity: 0.85;
-        line-height: 1.45;
-        font-size: 14px;
-      }
+      #landing h1 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
+      #landing p { margin: 0 0 14px; opacity: 0.85; line-height: 1.45; font-size: 14px; }
 
       #landing .grid {
         display: grid;
@@ -251,13 +237,18 @@
       }
       .hotspot:hover .hotspot-description { display: inline; }
 
-      /* AR MODE: smaller hotspots + hide descriptions (and keep them from stealing gestures) */
+      /* AR MODE: smaller hotspots + hide descriptions */
       model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.65; }
       model-viewer[ar-status="session-started"] .hotspot-label { padding: 6px 9px; font-size: 12px; }
       model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
       model-viewer[ar-status="session-started"] .hotspot-line { height: 30px; }
       model-viewer[ar-status="session-started"] .hotspot-description { display: none !important; }
-      model-viewer[ar-status="session-started"] .hotspot * { pointer-events: none !important; }
+
+      /* CRITICAL: in AR, do not let hotspots steal touches (pinch/rotate/drag) */
+      model-viewer[ar-status="session-started"] .hotspot,
+      model-viewer[ar-status="session-started"] .hotspot * {
+        pointer-events: none !important;
+      }
 
       /* ========================
          HOTSPOT TUNER PANEL
@@ -283,6 +274,26 @@
       #hotspot-controls input[type="range"] { width: 100%; }
       .hotspot-section { margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 6px; }
       .hotspot-readout { margin-top: 2px; font-family: monospace; font-size: 11px; }
+
+      /* ===== HUD (on-screen debug, no console needed) ===== */
+      #hud {
+        position: fixed;
+        left: 10px;
+        bottom: 10px;
+        z-index: 99999;
+        max-width: calc(100vw - 20px);
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(0,0,0,0.75);
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #fff;
+        font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+        pointer-events: none;
+        white-space: pre-wrap;
+      }
+
+      /* optional: hide HUD while AR is active (toggle in JS) */
+      #hud.is-hidden { display: none; }
     </style>
   </head>
 
@@ -303,7 +314,7 @@
     <model-viewer
       id="cellViewer"
       ar
-      ar-modes="webxr"
+      ar-modes="webxr scene-viewer quick-look"
       ar-placement="floor"
       ar-scale="auto"
       camera-controls
@@ -438,6 +449,7 @@
     </div>
 
     <div id="errorbox"></div>
+    <div id="hud"></div>
 
     <script>
       window.addEventListener("DOMContentLoaded", () => {
@@ -449,8 +461,13 @@
         const topbar = document.getElementById("topbar");
         const modelMenu = document.getElementById("model-menu");
         const errorbox = document.getElementById("errorbox");
+        const hud = document.getElementById("hud");
 
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        // If you want to force ONLY WebXR while debugging, set true:
+        const FORCE_WEBXR_ONLY = false;
+        if (FORCE_WEBXR_ONLY) viewer.setAttribute("ar-modes", "webxr");
 
         const MODELS = [
           { key: "neutrophil",  label: "Neutrophil",  glb: "./neutrophil.glb",  usdz: "./neutrophil.usdz" },
@@ -520,6 +537,7 @@
           const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
           el.setAttribute("data-position", posString);
 
+          // updateHotspot() only affects rendering if supported
           if (typeof viewer.updateHotspot === "function" && slotName) {
             viewer.updateHotspot({ name: slotName, position: posString });
           }
@@ -609,12 +627,6 @@
             const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
             setError(`Model failed to load.\nSelected: ${m.label}\nSRC: ${m.glb}\n${detail}`);
           }, { once: true });
-
-	viewer.addEventListener("ar-status", () => {
-  	    const s = viewer.getAttribute("ar-status");
-  	    console.log("ar-status:", s);
-        });
-
         }
 
         function buildLanding() {
@@ -627,12 +639,42 @@
           });
         }
 
+        // ===== HUD: on-screen debug (no console needed)
+        let pDown = 0, pMove = 0, tStart = 0, tMove = 0;
+        function hudUpdate(extra = "") {
+          const arStatus = viewer.getAttribute("ar-status") || "(none)";
+          const arMode = viewer.arMode || "(unknown)";
+          const canUpdateHotspot = typeof viewer.updateHotspot === "function";
+
+          hud.textContent =
+`ar-status: ${arStatus}
+arMode: ${arMode}
+pointerdown: ${pDown}  pointermove: ${pMove}
+touchstart: ${tStart}  touchmove: ${tMove}
+updateHotspot(): ${canUpdateHotspot}
+${extra}`.trim();
+        }
+        setInterval(() => hudUpdate(""), 250);
+
+        viewer.addEventListener("pointerdown", () => { pDown++; hudUpdate(""); }, { passive: true });
+        viewer.addEventListener("pointermove", () => { pMove++; hudUpdate(""); }, { passive: true });
+        viewer.addEventListener("touchstart",  () => { tStart++; hudUpdate(""); }, { passive: true });
+        viewer.addEventListener("touchmove",   () => { tMove++; hudUpdate(""); }, { passive: true });
+
         // Hide UI while AR is active so it can't steal touches
         viewer.addEventListener("ar-status", () => {
           const status = viewer.getAttribute("ar-status");
           const inAR = status === "session-started";
+
           topbar.style.display = inAR ? "none" : (activeKey ? "flex" : "none");
           if (inAR) tunerPanel.classList.remove("is-open");
+
+          // Keep HUD visible in AR to diagnose; set to true if you want it hidden
+          const HIDE_HUD_IN_AR = false;
+          if (HIDE_HUD_IN_AR && inAR) hud.classList.add("is-hidden");
+          else hud.classList.remove("is-hidden");
+
+          hudUpdate("ar-status event fired");
         });
 
         // Initial
@@ -640,6 +682,7 @@
         topbar.style.display = "none";
         viewer.style.display = "none";
         tunerPanel.classList.remove("is-open");
+        hudUpdate("ready");
       });
     </script>
   </body>
