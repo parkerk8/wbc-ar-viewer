@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <title>AR Model Viewer with Hotspots</title>
 
-    <script
-      type="module"
-      src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
-    ></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
     <style>
       :not(:defined) > * { display: none; }
@@ -70,7 +67,6 @@
         font-size: 14px;
       }
 
-      /* section label */
       .group-title {
         margin: 14px 0 8px;
         font-size: 12px;
@@ -108,14 +104,14 @@
         background: rgba(66,133,244,0.10);
       }
 
-      /* ===== Topbar controls (model select + tuner) ===== */
+      /* ===== Topbar controls ===== */
       #topbar {
         position: fixed;
         top: calc(env(safe-area-inset-top) + 10px);
         left: 10px;
         right: 10px;
         z-index: 10011;
-        display: none; /* show after selection */
+        display: none;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
@@ -125,7 +121,7 @@
       #model-menu {
         pointer-events: auto;
         display: inline-flex;
-        flex-direction: column; /* 2 lines */
+        flex-direction: column;
         gap: 8px;
         padding: 8px 10px;
         border-radius: 14px;
@@ -304,7 +300,6 @@
       }
       .hotspot:hover .hotspot-description { display: inline; }
 
-      /* AR MODE: smaller hotspots + hide descriptions */
       model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.55; }
       model-viewer[ar-status="session-started"] .hotspot-label { padding: 6px 9px; font-size: 12px; }
       model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
@@ -353,7 +348,7 @@
         background: rgba(0, 0, 0, 0.65);
         color: #fff;
 
-        display: none; /* only in AR */
+        display: none;
         gap: 10px;
         align-items: center;
       }
@@ -368,14 +363,11 @@
         white-space: nowrap;
       }
 
-      #ar-rotate {
-        width: 100%;
-      }
+      #ar-rotate { width: 100%; }
     </style>
   </head>
 
   <body>
-    <!-- Landing (no models loaded until user chooses) -->
     <div id="landing">
       <div class="card">
         <h1>Select a cell type</h1>
@@ -389,7 +381,6 @@
       </div>
     </div>
 
-    <!-- Topbar (shown after selection) -->
     <div id="topbar">
       <div id="model-menu"></div>
       <button id="tuner-toggle" type="button">Tuner</button>
@@ -405,13 +396,11 @@
       touch-action="none"
       interaction-prompt="none"
       camera-target="auto auto auto"
-      camera-orbit="0deg 70deg 1.1m"
+      camera-orbit="0deg 70deg 105%"
       min-camera-orbit="auto auto 80%"
       max-camera-orbit="auto auto 140%"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
-
-      <!-- Hotspots (same elements for all models; positions become model-specific via JS) -->
 
       <!-- Nucleus -->
       <button
@@ -500,13 +489,11 @@
       <button id="ar-failure">AR is not tracking!</button>
     </model-viewer>
 
-    <!-- User-facing AR rotation slider -->
     <div id="ar-rotate-bar">
       <div class="label">Rotate</div>
       <input id="ar-rotate" type="range" min="-180" max="180" step="1" value="0" />
     </div>
 
-    <!-- Hotspot tuner (toggle with on-screen button) -->
     <div id="hotspot-controls">
       <h3>Hotspot Position Tuner</h3>
 
@@ -591,11 +578,9 @@
           "hotspot-granules",
         ];
 
-        // ---- Per-model hotspot store (editable via tuner) ----
-        // Shape: HOTSPOTS_BY_MODEL[modelKey][hotspotId] = [x,y,z]
+        // ---- Per-model hotspot store ----
+        // HOTSPOTS_BY_MODEL[modelKey][hotspotId] = [x,y,z]
         const HOTSPOTS_BY_MODEL = Object.create(null);
-
-        // Capture the HTML's starting positions as a base template
         const BASE_HOTSPOTS = Object.create(null);
 
         let activeKey = null;
@@ -638,12 +623,12 @@
             const el = document.getElementById(hotspotId);
             if (!el) continue;
 
-            const slotName = el.getAttribute("slot"); // e.g. "hotspot-nucleus"
+            const slotName = el.getAttribute("slot");
             const [x, y, z] = HOTSPOTS_BY_MODEL[modelKey][hotspotId];
             const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
 
-            // Update DOM + model-viewer hotspot
             el.setAttribute("data-position", posString);
+
             if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
               viewer.updateHotspot({ name: slotName, position: posString });
             }
@@ -654,13 +639,12 @@
           const el = document.getElementById(hotspotId);
           if (!el) return;
 
-          // Persist ONLY for current model
           if (activeKey) {
             ensureModelHotspots(activeKey);
             HOTSPOTS_BY_MODEL[activeKey][hotspotId] = [x, y, z];
           }
 
-          const slotName = el.getAttribute("slot"); // e.g. "hotspot-nucleus"
+          const slotName = el.getAttribute("slot");
           const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
 
           el.setAttribute("data-position", posString);
@@ -668,6 +652,36 @@
           if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
             viewer.updateHotspot({ name: slotName, position: posString });
           }
+        }
+
+        // ---------- dimension / scale debug logging ----------
+        function logModelDiagnostics(modelKey, modelLabel) {
+          const src = viewer.getAttribute("src");
+          const iosSrc = viewer.getAttribute("ios-src");
+          const orbit = viewer.getAttribute("camera-orbit");
+          const target = viewer.getAttribute("camera-target");
+          const scaleAttr = viewer.getAttribute("scale");
+
+          let dims = null;
+          try {
+            if (typeof viewer.getDimensions === "function") dims = viewer.getDimensions();
+          } catch {}
+
+          let bbox = null;
+          try {
+            // Some builds expose getBoundingBox()
+            if (typeof viewer.getBoundingBox === "function") bbox = viewer.getBoundingBox();
+          } catch {}
+
+          console.groupCollapsed(`[WBC] ${modelKey} (${modelLabel}) diagnostics`);
+          console.log("src:", src);
+          console.log("ios-src:", iosSrc);
+          console.log("camera-orbit:", orbit);
+          console.log("camera-target:", target);
+          console.log("scale attr:", scaleAttr);
+          console.log("getDimensions():", dims);   // meters in model-viewer units
+          console.log("getBoundingBox():", bbox);  // if available
+          console.groupEnd();
         }
 
         // URL deep linking
@@ -718,31 +732,25 @@
           xSlider.addEventListener("input", update);
           ySlider.addEventListener("input", update);
           zSlider.addEventListener("input", update);
-
-          // no auto-update here; we call initAllSections() after applying model hotspots
         }
 
         function initAllSections() {
-          document
-            .querySelectorAll("#hotspot-controls .hotspot-section")
-            .forEach(initSection);
+          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(initSection);
 
-          // After sliders exist, sync their displayed values to current DOM
-          document
-            .querySelectorAll("#hotspot-controls .hotspot-section")
-            .forEach((sectionEl) => {
-              const hotspotId = sectionEl.getAttribute("data-hotspot");
-              const hotspotEl = document.getElementById(hotspotId);
-              if (!hotspotEl) return;
+          // Sync slider positions to whatever is currently in the DOM
+          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach((sectionEl) => {
+            const hotspotId = sectionEl.getAttribute("data-hotspot");
+            const hotspotEl = document.getElementById(hotspotId);
+            if (!hotspotEl) return;
 
-              const [x0, y0, z0] = parseDataPosition(hotspotEl);
-              sectionEl.querySelector(".hotspot-x").value = x0;
-              sectionEl.querySelector(".hotspot-y").value = y0;
-              sectionEl.querySelector(".hotspot-z").value = z0;
+            const [x0, y0, z0] = parseDataPosition(hotspotEl);
+            sectionEl.querySelector(".hotspot-x").value = x0;
+            sectionEl.querySelector(".hotspot-y").value = y0;
+            sectionEl.querySelector(".hotspot-z").value = z0;
 
-              const readout = sectionEl.querySelector(".hotspot-readout");
-              readout.textContent = `data-position="${x0.toFixed(3)} ${y0.toFixed(3)} ${z0.toFixed(3)}"`;
-            });
+            const readout = sectionEl.querySelector(".hotspot-readout");
+            readout.textContent = `data-position="${x0.toFixed(3)} ${y0.toFixed(3)} ${z0.toFixed(3)}"`;
+          });
         }
 
         tunerToggle.addEventListener("click", () => {
@@ -816,34 +824,32 @@
 
           setError(null);
           activeKey = key;
-
-          // Deep link this model
           setUrlModelKey(key);
 
-          // Show viewer UI
           landing.style.display = "none";
           viewer.style.display = "block";
           topbar.style.display = "flex";
           renderModelMenu();
 
-          // Swap sources
+          // Reset any per-model scale overrides (keep clean for diagnostics)
+          viewer.removeAttribute("scale");
+
           viewer.removeAttribute("src");
           viewer.removeAttribute("ios-src");
 
-          // Force a fresh load next frame
           requestAnimationFrame(() => {
             viewer.setAttribute("src", m.glb);
             if (isIOS) viewer.setAttribute("ios-src", m.usdz);
           });
 
           viewer.addEventListener("load", () => {
-            // Apply THIS model's hotspots after model is loaded (updateHotspot safest after load)
+            // Per-model hotspots
             applyHotspotsForModel(key);
-
-            // Re-init tuner sliders to the now-applied positions
             initAllSections();
-
             updateHotspotScale();
+
+            // Logs after load (dimensions, etc.)
+            logModelDiagnostics(key, m.label);
           }, { once: true });
 
           viewer.addEventListener("error", (ev) => {
@@ -870,25 +876,22 @@
           renderGrid(landingGridCytes, CYTES);
         }
 
-        // ----- capture base hotspot positions from the HTML once -----
+        // Capture base hotspot positions from HTML once
         for (const id of HOTSPOT_IDS) {
           const el = document.getElementById(id);
           if (el) BASE_HOTSPOTS[id] = parseDataPosition(el);
         }
 
-        // Initial state: landing only, no model loaded
         buildLanding();
         topbar.style.display = "none";
         viewer.style.display = "none";
         tunerPanel.classList.remove("is-open");
 
-        // Auto-select from URL (?model=... or #model=...)
         const requested = getRequestedModelKey();
         if (requested && MODEL_BY_KEY.has(requested)) {
           selectModel(requested);
         }
 
-        // Keep scale updates
         viewer.addEventListener("camera-change", updateHotspotScale);
       });
     </script>
