@@ -111,7 +111,7 @@
         left: 10px;
         right: 10px;
         z-index: 10011;
-        display: none;
+        display: none; /* show after selection */
         align-items: center;
         justify-content: space-between;
         gap: 10px;
@@ -121,7 +121,7 @@
       #model-menu {
         pointer-events: auto;
         display: inline-flex;
-        flex-direction: column;
+        flex-direction: column; /* 2 lines */
         gap: 8px;
         padding: 8px 10px;
         border-radius: 14px;
@@ -300,6 +300,7 @@
       }
       .hotspot:hover .hotspot-description { display: inline; }
 
+      /* AR MODE: smaller hotspots + hide descriptions */
       model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.55; }
       model-viewer[ar-status="session-started"] .hotspot-label { padding: 6px 9px; font-size: 12px; }
       model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
@@ -348,7 +349,7 @@
         background: rgba(0, 0, 0, 0.65);
         color: #fff;
 
-        display: none;
+        display: none; /* only in AR */
         gap: 10px;
         align-items: center;
       }
@@ -569,7 +570,7 @@
         const ALL_MODELS = [...PHILS, ...CYTES];
         const MODEL_BY_KEY = new Map(ALL_MODELS.map(m => [m.key, m]));
 
-        // ---- hotspot ids we manage (same DOM elements; per-model positions) ----
+        // ---- hotspots (same DOM elements; per-model positions) ----
         const HOTSPOT_IDS = [
           "hotspot-nucleus",
           "hotspot-golgi",
@@ -578,12 +579,18 @@
           "hotspot-granules",
         ];
 
-        // ---- Per-model hotspot store ----
         // HOTSPOTS_BY_MODEL[modelKey][hotspotId] = [x,y,z]
         const HOTSPOTS_BY_MODEL = Object.create(null);
         const BASE_HOTSPOTS = Object.create(null);
 
         let activeKey = null;
+
+        // ---------- Camera auto-framing reference ----------
+        // We keep the same theta/phi as your HTML and compute a percent per model
+        // so that every model starts framed like neutrophil.
+        const REF_KEY = "neutrophil";
+        const REF_ORBIT = { theta: "0deg", phi: "70deg", pct: 105 };
+        let refSize = null; // neutrophil size (meters)
 
         // ---------- helpers ----------
         const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -669,7 +676,6 @@
 
           let bbox = null;
           try {
-            // Some builds expose getBoundingBox()
             if (typeof viewer.getBoundingBox === "function") bbox = viewer.getBoundingBox();
           } catch {}
 
@@ -679,9 +685,26 @@
           console.log("camera-orbit:", orbit);
           console.log("camera-target:", target);
           console.log("scale attr:", scaleAttr);
-          console.log("getDimensions():", dims);   // meters in model-viewer units
-          console.log("getBoundingBox():", bbox);  // if available
+          console.log("getDimensions():", dims);
+          console.log("getBoundingBox():", bbox);
           console.groupEnd();
+
+          return dims;
+        }
+
+        function modelSizeFromDims(d) {
+          if (!d) return null;
+          const x = Number(d.x) || 0;
+          const y = Number(d.y) || 0;
+          const z = Number(d.z) || 0;
+          return Math.max(x, y, z);
+        }
+
+        function setOrbitPercent(pct) {
+          const safe = Math.max(10, Math.min(1000, pct)); // keep sane
+          viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${safe.toFixed(2)}%`);
+          // snap if available
+          if (typeof viewer.jumpCameraToGoal === "function") viewer.jumpCameraToGoal();
         }
 
         // URL deep linking
@@ -737,7 +760,7 @@
         function initAllSections() {
           document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(initSection);
 
-          // Sync slider positions to whatever is currently in the DOM
+          // Sync sliders to current DOM
           document.querySelectorAll("#hotspot-controls .hotspot-section").forEach((sectionEl) => {
             const hotspotId = sectionEl.getAttribute("data-hotspot");
             const hotspotEl = document.getElementById(hotspotId);
@@ -831,8 +854,11 @@
           topbar.style.display = "flex";
           renderModelMenu();
 
-          // Reset any per-model scale overrides (keep clean for diagnostics)
+          // Reset any per-model scale overrides (we are doing camera percent adjustment instead)
           viewer.removeAttribute("scale");
+
+          // Reset orbit to baseline before load (helps reduce carry-over)
+          viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${REF_ORBIT.pct}%`);
 
           viewer.removeAttribute("src");
           viewer.removeAttribute("ios-src");
@@ -848,8 +874,21 @@
             initAllSections();
             updateHotspotScale();
 
-            // Logs after load (dimensions, etc.)
-            logModelDiagnostics(key, m.label);
+            // Diagnostics + dimensions
+            const dims = logModelDiagnostics(key, m.label);
+            const size = modelSizeFromDims(dims);
+
+            // Capture neutrophil as the framing reference
+            if (key === REF_KEY && size) {
+              refSize = size;
+            }
+
+            // If we already know refSize, adjust orbit percent so this model frames like neutrophil
+            if (refSize && size && size > 0) {
+              const adjustedPct = REF_ORBIT.pct * (refSize / size);
+              setOrbitPercent(adjustedPct);
+            }
+
           }, { once: true });
 
           viewer.addEventListener("error", (ev) => {
@@ -887,6 +926,7 @@
         viewer.style.display = "none";
         tunerPanel.classList.remove("is-open");
 
+        // Auto-select from URL (?model=... or #model=...)
         const requested = getRequestedModelKey();
         if (requested && MODEL_BY_KEY.has(requested)) {
           selectModel(requested);
