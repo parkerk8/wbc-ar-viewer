@@ -411,7 +411,9 @@
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
- <!-- Nucleus -->
+      <!-- Hotspots (same elements for all models; positions become model-specific via JS) -->
+
+      <!-- Nucleus -->
       <button
         id="hotspot-nucleus"
         slot="hotspot-nucleus"
@@ -490,7 +492,6 @@
           <span class="hotspot-description">Granule structures with stored enzymes or molecules.</span>
         </div>
       </button>
-
 
       <div id="ar-prompt">
         <img src="hand.png" alt="Move phone to find surface" />
@@ -581,6 +582,22 @@
         const ALL_MODELS = [...PHILS, ...CYTES];
         const MODEL_BY_KEY = new Map(ALL_MODELS.map(m => [m.key, m]));
 
+        // ---- hotspot ids we manage (same DOM elements; per-model positions) ----
+        const HOTSPOT_IDS = [
+          "hotspot-nucleus",
+          "hotspot-golgi",
+          "hotspot-mito",
+          "hotspot-ribosome",
+          "hotspot-granules",
+        ];
+
+        // ---- Per-model hotspot store (editable via tuner) ----
+        // Shape: HOTSPOTS_BY_MODEL[modelKey][hotspotId] = [x,y,z]
+        const HOTSPOTS_BY_MODEL = Object.create(null);
+
+        // Capture the HTML's starting positions as a base template
+        const BASE_HOTSPOTS = Object.create(null);
+
         let activeKey = null;
 
         // ---------- helpers ----------
@@ -603,9 +620,45 @@
           return [0, 0, 0];
         }
 
+        function ensureModelHotspots(modelKey) {
+          if (HOTSPOTS_BY_MODEL[modelKey]) return;
+
+          const clone = Object.create(null);
+          for (const id of HOTSPOT_IDS) {
+            const p = BASE_HOTSPOTS[id] || [0, 0, 0];
+            clone[id] = [p[0], p[1], p[2]];
+          }
+          HOTSPOTS_BY_MODEL[modelKey] = clone;
+        }
+
+        function applyHotspotsForModel(modelKey) {
+          ensureModelHotspots(modelKey);
+
+          for (const hotspotId of HOTSPOT_IDS) {
+            const el = document.getElementById(hotspotId);
+            if (!el) continue;
+
+            const slotName = el.getAttribute("slot"); // e.g. "hotspot-nucleus"
+            const [x, y, z] = HOTSPOTS_BY_MODEL[modelKey][hotspotId];
+            const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
+
+            // Update DOM + model-viewer hotspot
+            el.setAttribute("data-position", posString);
+            if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
+              viewer.updateHotspot({ name: slotName, position: posString });
+            }
+          }
+        }
+
         function setHotspotPosition(hotspotId, x, y, z) {
           const el = document.getElementById(hotspotId);
           if (!el) return;
+
+          // Persist ONLY for current model
+          if (activeKey) {
+            ensureModelHotspots(activeKey);
+            HOTSPOTS_BY_MODEL[activeKey][hotspotId] = [x, y, z];
+          }
 
           const slotName = el.getAttribute("slot"); // e.g. "hotspot-nucleus"
           const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
@@ -617,7 +670,7 @@
           }
         }
 
-        // NEW: URL deep linking
+        // URL deep linking
         function getRequestedModelKey() {
           const url = new URL(window.location.href);
           const qp = (url.searchParams.get("model") || "").trim().toLowerCase();
@@ -666,16 +719,32 @@
           ySlider.addEventListener("input", update);
           zSlider.addEventListener("input", update);
 
-          update();
+          // no auto-update here; we call initAllSections() after applying model hotspots
         }
 
         function initAllSections() {
           document
             .querySelectorAll("#hotspot-controls .hotspot-section")
             .forEach(initSection);
+
+          // After sliders exist, sync their displayed values to current DOM
+          document
+            .querySelectorAll("#hotspot-controls .hotspot-section")
+            .forEach((sectionEl) => {
+              const hotspotId = sectionEl.getAttribute("data-hotspot");
+              const hotspotEl = document.getElementById(hotspotId);
+              if (!hotspotEl) return;
+
+              const [x0, y0, z0] = parseDataPosition(hotspotEl);
+              sectionEl.querySelector(".hotspot-x").value = x0;
+              sectionEl.querySelector(".hotspot-y").value = y0;
+              sectionEl.querySelector(".hotspot-z").value = z0;
+
+              const readout = sectionEl.querySelector(".hotspot-readout");
+              readout.textContent = `data-position="${x0.toFixed(3)} ${y0.toFixed(3)} ${z0.toFixed(3)}"`;
+            });
         }
 
-        // Toggle tuner with on-screen button
         tunerToggle.addEventListener("click", () => {
           tunerPanel.classList.toggle("is-open");
         });
@@ -748,7 +817,7 @@
           setError(null);
           activeKey = key;
 
-          // NEW: deep link this model
+          // Deep link this model
           setUrlModelKey(key);
 
           // Show viewer UI
@@ -767,9 +836,13 @@
             if (isIOS) viewer.setAttribute("ios-src", m.usdz);
           });
 
-          // Re-init after load (updateHotspot safest after load)
           viewer.addEventListener("load", () => {
+            // Apply THIS model's hotspots after model is loaded (updateHotspot safest after load)
+            applyHotspotsForModel(key);
+
+            // Re-init tuner sliders to the now-applied positions
             initAllSections();
+
             updateHotspotScale();
           }, { once: true });
 
@@ -795,6 +868,12 @@
 
           renderGrid(landingGridPhils, PHILS);
           renderGrid(landingGridCytes, CYTES);
+        }
+
+        // ----- capture base hotspot positions from the HTML once -----
+        for (const id of HOTSPOT_IDS) {
+          const el = document.getElementById(id);
+          if (el) BASE_HOTSPOTS[id] = parseDataPosition(el);
         }
 
         // Initial state: landing only, no model loaded
