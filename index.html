@@ -14,7 +14,7 @@
         padding: 0;
         width: 100%;
         height: 100%;
-        overflow: hidden; /* kill page scroll */
+        overflow: hidden;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: #111;
       }
@@ -26,7 +26,7 @@
         height: 100dvh;
         background-color: #111;
         overflow: hidden;
-        display: none; /* hidden until a model is selected */
+        display: none;
       }
 
       /* ===== Landing ===== */
@@ -104,14 +104,14 @@
         background: rgba(66,133,244,0.10);
       }
 
-      /* ===== Topbar controls ===== */
+      /* ===== Topbar ===== */
       #topbar {
         position: fixed;
         top: calc(env(safe-area-inset-top) + 10px);
         left: 10px;
         right: 10px;
         z-index: 10011;
-        display: none; /* show after selection */
+        display: none;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
@@ -121,7 +121,7 @@
       #model-menu {
         pointer-events: auto;
         display: inline-flex;
-        flex-direction: column; /* 2 lines */
+        flex-direction: column;
         gap: 8px;
         padding: 8px 10px;
         border-radius: 14px;
@@ -205,37 +205,6 @@
         border: 1px solid #dadce0;
         white-space: nowrap;
       }
-      #ar-button:active { background-color: #e8eaed; }
-      #ar-button:focus { outline: none; }
-      #ar-button:focus-visible { outline: 1px solid #4285f4; }
-
-      @keyframes circle {
-        from { transform: translateX(-50%) rotate(0deg) translateX(50px) rotate(0deg); }
-        to { transform: translateX(-50%) rotate(360deg) translateX(50px) rotate(-360deg); }
-      }
-      @keyframes elongate {
-        from { transform: translateX(100px); }
-        to { transform: translateX(-100px); }
-      }
-
-      model-viewer > #ar-prompt {
-        position: absolute;
-        left: 50%;
-        bottom: 175px;
-        animation: elongate 2s infinite ease-in-out alternate;
-        display: none;
-      }
-      model-viewer[ar-status="session-started"] > #ar-prompt { display: block; }
-      model-viewer > #ar-prompt > img { animation: circle 4s linear infinite; }
-
-      model-viewer > #ar-failure {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: 175px;
-        display: none;
-      }
-      model-viewer[ar-tracking="not-tracking"] > #ar-failure { display: block; }
 
       /* ========================
          HOTSPOTS
@@ -332,7 +301,7 @@
       .hotspot-readout { margin-top: 2px; font-family: monospace; font-size: 11px; }
 
       /* ========================
-         AR ROTATION SLIDER (USER-FACING)
+         AR ROTATION SLIDER
          ======================== */
       #ar-rotate-bar {
         position: fixed;
@@ -397,8 +366,8 @@
       interaction-prompt="none"
       camera-target="auto auto auto"
       camera-orbit="0deg 70deg 105%"
-      min-camera-orbit="auto auto 30%"
-      max-camera-orbit="auto auto 600%"
+      min-camera-orbit="auto auto 10%"
+      max-camera-orbit="auto auto 1000%"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
@@ -481,12 +450,6 @@
           <span class="hotspot-description">Granule structures with stored enzymes or molecules.</span>
         </div>
       </button>
-
-      <div id="ar-prompt">
-        <img src="hand.png" alt="Move phone to find surface" />
-      </div>
-
-      <button id="ar-failure">AR is not tracking!</button>
     </model-viewer>
 
     <div id="ar-rotate-bar">
@@ -569,7 +532,7 @@
         const ALL_MODELS = [...PHILS, ...CYTES];
         const MODEL_BY_KEY = new Map(ALL_MODELS.map(m => [m.key, m]));
 
-        // ---- hotspots (same DOM elements; per-model positions) ----
+        // ---- hotspots (same DOM elements; per-model positions stored in JS) ----
         const HOTSPOT_IDS = [
           "hotspot-nucleus",
           "hotspot-golgi",
@@ -578,16 +541,18 @@
           "hotspot-granules",
         ];
 
-        // HOTSPOTS_BY_MODEL[modelKey][hotspotId] = [x,y,z]
         const HOTSPOTS_BY_MODEL = Object.create(null);
         const BASE_HOTSPOTS = Object.create(null);
 
         let activeKey = null;
 
-        // ---------- Camera auto-framing reference ----------
+        // ---------- Camera framing reference ----------
         const REF_KEY = "neutrophil";
         const REF_ORBIT = { theta: "0deg", phi: "70deg", pct: 105 };
-        let refSize = null; // neutrophil size (meters)
+
+        // If you land on a non-neutrophil URL first, we still want a stable reference.
+        // This is your logged neutrophil dimension (~17.4948).
+        let refSize = 17.494806182401366;
 
         // ---------- helpers ----------
         const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -611,7 +576,6 @@
 
         function ensureModelHotspots(modelKey) {
           if (HOTSPOTS_BY_MODEL[modelKey]) return;
-
           const clone = Object.create(null);
           for (const id of HOTSPOT_IDS) {
             const p = BASE_HOTSPOTS[id] || [0, 0, 0];
@@ -622,7 +586,6 @@
 
         function applyHotspotsForModel(modelKey) {
           ensureModelHotspots(modelKey);
-
           for (const hotspotId of HOTSPOT_IDS) {
             const el = document.getElementById(hotspotId);
             if (!el) continue;
@@ -632,7 +595,6 @@
             const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
 
             el.setAttribute("data-position", posString);
-
             if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
               viewer.updateHotspot({ name: slotName, position: posString });
             }
@@ -652,71 +614,18 @@
           const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
 
           el.setAttribute("data-position", posString);
-
           if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
             viewer.updateHotspot({ name: slotName, position: posString });
           }
         }
 
-        // ---------- dimension / scale debug logging ----------
-        function logModelDiagnostics(modelKey, modelLabel) {
-          const src = viewer.getAttribute("src");
-          const iosSrc = viewer.getAttribute("ios-src");
-          const orbit = viewer.getAttribute("camera-orbit");
-          const target = viewer.getAttribute("camera-target");
-          const scaleAttr = viewer.getAttribute("scale");
-
-          let dims = null;
-          try {
-            if (typeof viewer.getDimensions === "function") dims = viewer.getDimensions();
-          } catch {}
-
-          let bbox = null;
-          try {
-            if (typeof viewer.getBoundingBox === "function") bbox = viewer.getBoundingBox();
-          } catch {}
-
-          console.groupCollapsed(`[WBC] ${modelKey} (${modelLabel}) diagnostics`);
-          console.log("src:", src);
-          console.log("ios-src:", iosSrc);
-          console.log("camera-orbit:", orbit);
-          console.log("camera-target:", target);
-          console.log("scale attr:", scaleAttr);
-          console.log("getDimensions():", dims);
-          console.log("getBoundingBox():", bbox);
-          console.groupEnd();
-
-          return dims;
-        }
-
-        function modelSizeFromDims(d) {
-          if (!d) return null;
-          const x = Number(d.x) || 0;
-          const y = Number(d.y) || 0;
-          const z = Number(d.z) || 0;
-          return Math.max(x, y, z);
-        }
-
-        function setOrbitPercent(pct) {
-          const safe = Math.max(10, Math.min(1000, pct));
-          viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${safe.toFixed(2)}%`);
-
-          // Force apply now (different builds support different APIs)
-          requestAnimationFrame(() => {
-            if (typeof viewer.updateFraming === "function") viewer.updateFraming();
-            if (typeof viewer.jumpCameraToGoal === "function") viewer.jumpCameraToGoal();
-          });
-        }
-
-        // URL deep linking
+        // ---------- URL deep linking ----------
         function getRequestedModelKey() {
           const url = new URL(window.location.href);
           const qp = (url.searchParams.get("model") || "").trim().toLowerCase();
-
           const hash = (url.hash || "").replace(/^#/, "");
           const hp = new URLSearchParams(hash).get("model");
           const h = (hp || "").trim().toLowerCase();
-
           return qp || h || null;
         }
 
@@ -758,10 +667,7 @@
           zSlider.addEventListener("input", update);
         }
 
-        function initAllSections() {
-          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(initSection);
-
-          // Sync sliders to current DOM
+        function syncSlidersToDom() {
           document.querySelectorAll("#hotspot-controls .hotspot-section").forEach((sectionEl) => {
             const hotspotId = sectionEl.getAttribute("data-hotspot");
             const hotspotEl = document.getElementById(hotspotId);
@@ -775,6 +681,11 @@
             const readout = sectionEl.querySelector(".hotspot-readout");
             readout.textContent = `data-position="${x0.toFixed(3)} ${y0.toFixed(3)} ${z0.toFixed(3)}"`;
           });
+        }
+
+        function initAllSections() {
+          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(initSection);
+          syncSlidersToDom();
         }
 
         tunerToggle.addEventListener("click", () => {
@@ -791,12 +702,10 @@
 
           const minRadius = 4;
           const maxRadius = 18;
-
           const t = clamp((radius - minRadius) / (maxRadius - minRadius), 0, 1);
 
           const minScale = 1.0;
           const maxScale = 2.2;
-
           const scale = maxScale - (maxScale - minScale) * t;
 
           viewer.querySelectorAll(".hotspot").forEach((el) => {
@@ -822,6 +731,50 @@
           }
         });
 
+        // ---------- dimension / framing ----------
+        function logModelDiagnostics(modelKey, modelLabel) {
+          const src = viewer.getAttribute("src");
+          const iosSrc = viewer.getAttribute("ios-src");
+          const orbit = viewer.getAttribute("camera-orbit");
+          const target = viewer.getAttribute("camera-target");
+          const scaleAttr = viewer.getAttribute("scale");
+
+          let dims = null;
+          try { if (typeof viewer.getDimensions === "function") dims = viewer.getDimensions(); } catch {}
+          let bbox = null;
+          try { if (typeof viewer.getBoundingBox === "function") bbox = viewer.getBoundingBox(); } catch {}
+
+          console.groupCollapsed(`[WBC] ${modelKey} (${modelLabel}) diagnostics`);
+          console.log("src:", src);
+          console.log("ios-src:", iosSrc);
+          console.log("camera-orbit:", orbit);
+          console.log("camera-target:", target);
+          console.log("scale attr:", scaleAttr);
+          console.log("getDimensions():", dims);
+          console.log("getBoundingBox():", bbox);
+          console.groupEnd();
+
+          return dims;
+        }
+
+        function modelSizeFromDims(d) {
+          if (!d) return null;
+          const x = Number(d.x) || 0;
+          const y = Number(d.y) || 0;
+          const z = Number(d.z) || 0;
+          return Math.max(x, y, z);
+        }
+
+        function setOrbitPercent(pct) {
+          const safe = Math.max(10, Math.min(1000, pct));
+          viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${safe.toFixed(2)}%`);
+
+          requestAnimationFrame(() => {
+            if (typeof viewer.updateFraming === "function") viewer.updateFraming();
+            if (typeof viewer.jumpCameraToGoal === "function") viewer.jumpCameraToGoal();
+          });
+        }
+
         // ---------- model switching ----------
         function renderModelMenu() {
           const renderRow = (arr) => arr.map(m => {
@@ -835,10 +788,7 @@
           `;
 
           modelMenu.querySelectorAll("button[data-model]").forEach(btn => {
-            btn.addEventListener("click", () => {
-              const key = btn.getAttribute("data-model");
-              selectModel(key);
-            });
+            btn.addEventListener("click", () => selectModel(btn.getAttribute("data-model")));
           });
         }
 
@@ -855,11 +805,9 @@
           topbar.style.display = "flex";
           renderModelMenu();
 
-          // Reset any per-model scale overrides (we are doing camera percent adjustment instead)
-          viewer.removeAttribute("scale");
-
-          // Reset orbit to baseline before load (reduces carry-over)
+          // Reset orbit to baseline before load (minimize carry-over)
           viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${REF_ORBIT.pct}%`);
+          viewer.removeAttribute("scale");
 
           viewer.removeAttribute("src");
           viewer.removeAttribute("ios-src");
@@ -875,21 +823,26 @@
             initAllSections();
             updateHotspotScale();
 
-            // Diagnostics + dimensions
+            // Read dimensions
             const dims = logModelDiagnostics(key, m.label);
             const size = modelSizeFromDims(dims);
 
-            // Capture neutrophil as the framing reference
+            // If neutrophil, refresh refSize from the actual file
             if (key === REF_KEY && size) {
               refSize = size;
             }
 
-            // Adjust orbit percent so this model frames like neutrophil
+            // --- IMPORTANT FIX ---
+            // To match neutrophil's on-screen framing:
+            // distance ∝ size  => orbitPercent ∝ size
+            // so: pct = REF_PCT * (size / refSize)
             if (refSize && size && size > 0) {
-              const adjustedPct = REF_ORBIT.pct * (refSize / size);
+              const adjustedPct = REF_ORBIT.pct * (size / refSize);
+              console.log(`[WBC] framing: refSize=${refSize.toFixed(6)} size=${size.toFixed(6)} -> orbit=${adjustedPct.toFixed(2)}%`);
               setOrbitPercent(adjustedPct);
+            } else {
+              setOrbitPercent(REF_ORBIT.pct);
             }
-
           }, { once: true });
 
           viewer.addEventListener("error", (ev) => {
@@ -906,9 +859,7 @@
             `).join("");
 
             gridEl.querySelectorAll("button[data-model]").forEach(btn => {
-              btn.addEventListener("click", () => {
-                selectModel(btn.getAttribute("data-model"));
-              });
+              btn.addEventListener("click", () => selectModel(btn.getAttribute("data-model")));
             });
           };
 
@@ -922,6 +873,7 @@
           if (el) BASE_HOTSPOTS[id] = parseDataPosition(el);
         }
 
+        // Initial UI state
         buildLanding();
         topbar.style.display = "none";
         viewer.style.display = "none";
