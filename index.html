@@ -300,7 +300,6 @@
       }
       .hotspot:hover .hotspot-description { display: inline; }
 
-      /* AR MODE: smaller hotspots + hide descriptions */
       model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.55; }
       model-viewer[ar-status="session-started"] .hotspot-label { padding: 6px 9px; font-size: 12px; }
       model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
@@ -349,7 +348,7 @@
         background: rgba(0, 0, 0, 0.65);
         color: #fff;
 
-        display: none; /* only in AR */
+        display: none;
         gap: 10px;
         align-items: center;
       }
@@ -398,8 +397,8 @@
       interaction-prompt="none"
       camera-target="auto auto auto"
       camera-orbit="0deg 70deg 105%"
-      min-camera-orbit="auto auto 80%"
-      max-camera-orbit="auto auto 140%"
+      min-camera-orbit="auto auto 30%"
+      max-camera-orbit="auto auto 600%"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
@@ -586,8 +585,6 @@
         let activeKey = null;
 
         // ---------- Camera auto-framing reference ----------
-        // We keep the same theta/phi as your HTML and compute a percent per model
-        // so that every model starts framed like neutrophil.
         const REF_KEY = "neutrophil";
         const REF_ORBIT = { theta: "0deg", phi: "70deg", pct: 105 };
         let refSize = null; // neutrophil size (meters)
@@ -701,10 +698,14 @@
         }
 
         function setOrbitPercent(pct) {
-          const safe = Math.max(10, Math.min(1000, pct)); // keep sane
+          const safe = Math.max(10, Math.min(1000, pct));
           viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${safe.toFixed(2)}%`);
-          // snap if available
-          if (typeof viewer.jumpCameraToGoal === "function") viewer.jumpCameraToGoal();
+
+          // Force apply now (different builds support different APIs)
+          requestAnimationFrame(() => {
+            if (typeof viewer.updateFraming === "function") viewer.updateFraming();
+            if (typeof viewer.jumpCameraToGoal === "function") viewer.jumpCameraToGoal();
+          });
         }
 
         // URL deep linking
@@ -857,7 +858,7 @@
           // Reset any per-model scale overrides (we are doing camera percent adjustment instead)
           viewer.removeAttribute("scale");
 
-          // Reset orbit to baseline before load (helps reduce carry-over)
+          // Reset orbit to baseline before load (reduces carry-over)
           viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${REF_ORBIT.pct}%`);
 
           viewer.removeAttribute("src");
@@ -869,7 +870,7 @@
           });
 
           viewer.addEventListener("load", () => {
-            // Per-model hotspots
+            // Apply per-model hotspots
             applyHotspotsForModel(key);
             initAllSections();
             updateHotspotScale();
@@ -883,7 +884,7 @@
               refSize = size;
             }
 
-            // If we already know refSize, adjust orbit percent so this model frames like neutrophil
+            // Adjust orbit percent so this model frames like neutrophil
             if (refSize && size && size > 0) {
               const adjustedPct = REF_ORBIT.pct * (refSize / size);
               setOrbitPercent(adjustedPct);
