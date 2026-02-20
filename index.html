@@ -166,7 +166,6 @@
         font-size: 13px;
       }
 
-      /* ===== Error banner ===== */
       #errorbox {
         position: fixed;
         left: 10px;
@@ -366,89 +365,40 @@
       interaction-prompt="none"
       camera-target="auto auto auto"
       camera-orbit="0deg 70deg 105%"
-      min-camera-orbit="auto auto 10%"
-      max-camera-orbit="auto auto 1000%"
+      min-camera-orbit="auto auto 80%"
+      max-camera-orbit="auto auto 140%"
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
-      <!-- Nucleus -->
-      <button
-        id="hotspot-nucleus"
-        slot="hotspot-nucleus"
-        class="hotspot"
-        data-position="-0.600 0.200 -0.500"
-        data-normal="0.973 -0.164 0.164"
-      >
+      <!-- HOTSPOTS (single set of DOM nodes; we swap positions per model) -->
+      <button id="hotspot-nucleus" slot="hotspot-nucleus" class="hotspot" data-position="-0.600 0.200 -0.500" data-normal="0.973 -0.164 0.164">
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
-        <div class="hotspot-label">
-          Nucleus
-          <span class="hotspot-description">Contains genetic material and controls cell activities.</span>
-        </div>
+        <div class="hotspot-label">Nucleus <span class="hotspot-description">Contains genetic material and controls cell activities.</span></div>
       </button>
 
-      <!-- Golgi Complex -->
-      <button
-        id="hotspot-golgi"
-        slot="hotspot-golgi"
-        class="hotspot"
-        data-position="0.300 -0.200 0.100"
-        data-normal="1.000 0.600 -0.700"
-      >
+      <button id="hotspot-golgi" slot="hotspot-golgi" class="hotspot" data-position="0.300 -0.200 0.100" data-normal="1.000 0.600 -0.700">
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
-        <div class="hotspot-label">
-          Golgi Complex
-          <span class="hotspot-description">Packages and modifies proteins and lipids.</span>
-        </div>
+        <div class="hotspot-label">Golgi Complex <span class="hotspot-description">Packages and modifies proteins and lipids.</span></div>
       </button>
 
-      <!-- Mitochondrion -->
-      <button
-        id="hotspot-mito"
-        slot="hotspot-mito"
-        class="hotspot"
-        data-position="0.800 -0.200 -0.800"
-        data-normal="-0.842 -0.507 -0.181"
-      >
+      <button id="hotspot-mito" slot="hotspot-mito" class="hotspot" data-position="0.800 -0.200 -0.800" data-normal="-0.842 -0.507 -0.181">
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
-        <div class="hotspot-label">
-          Mitochondrion
-          <span class="hotspot-description">Produces energy (ATP) for the cell.</span>
-        </div>
+        <div class="hotspot-label">Mitochondrion <span class="hotspot-description">Produces energy (ATP) for the cell.</span></div>
       </button>
 
-      <!-- Ribosome -->
-      <button
-        id="hotspot-ribosome"
-        slot="hotspot-ribosome"
-        class="hotspot"
-        data-position="1.200 -0.700 0.000"
-        data-normal="-0.507 -0.181 0.842"
-      >
+      <button id="hotspot-ribosome" slot="hotspot-ribosome" class="hotspot" data-position="1.200 -0.700 0.000" data-normal="-0.507 -0.181 0.842">
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
-        <div class="hotspot-label">
-          Ribosome
-          <span class="hotspot-description">Site of protein synthesis.</span>
-        </div>
+        <div class="hotspot-label">Ribosome <span class="hotspot-description">Site of protein synthesis.</span></div>
       </button>
 
-      <!-- Primary Granules -->
-      <button
-        id="hotspot-granules"
-        slot="hotspot-granules"
-        class="hotspot"
-        data-position="0.500 -0.200 1.600"
-        data-normal="0.521 0.181 -0.834"
-      >
+      <button id="hotspot-granules" slot="hotspot-granules" class="hotspot" data-position="0.500 -0.200 1.600" data-normal="0.521 0.181 -0.834">
         <div class="hotspot-anchor-dot"></div>
         <div class="hotspot-line"></div>
-        <div class="hotspot-label">
-          Primary Granules
-          <span class="hotspot-description">Granule structures with stored enzymes or molecules.</span>
-        </div>
+        <div class="hotspot-label">Primary Granules <span class="hotspot-description">Granule structures with stored enzymes or molecules.</span></div>
       </button>
     </model-viewer>
 
@@ -532,29 +482,16 @@
         const ALL_MODELS = [...PHILS, ...CYTES];
         const MODEL_BY_KEY = new Map(ALL_MODELS.map(m => [m.key, m]));
 
-        // ---- hotspots (same DOM elements; per-model positions stored in JS) ----
-        const HOTSPOT_IDS = [
-          "hotspot-nucleus",
-          "hotspot-golgi",
-          "hotspot-mito",
-          "hotspot-ribosome",
-          "hotspot-granules",
-        ];
-
+        const HOTSPOT_IDS = ["hotspot-nucleus","hotspot-golgi","hotspot-mito","hotspot-ribosome","hotspot-granules"];
         const HOTSPOTS_BY_MODEL = Object.create(null);
         const BASE_HOTSPOTS = Object.create(null);
 
         let activeKey = null;
 
-        // ---------- Camera framing reference ----------
+        // Reference model for sizing (neutrophil)
         const REF_KEY = "neutrophil";
-        const REF_ORBIT = { theta: "0deg", phi: "70deg", pct: 105 };
+        let refSize = 17.494806182401366; // fallback until neutrophil loads
 
-        // If you land on a non-neutrophil URL first, we still want a stable reference.
-        // This is your logged neutrophil dimension (~17.4948).
-        let refSize = 17.494806182401366;
-
-        // ---------- helpers ----------
         const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
         function setError(msg) {
@@ -570,15 +507,15 @@
         function parseDataPosition(el) {
           const raw = (el.getAttribute("data-position") || "").trim();
           const parts = raw.split(/\s+/).map(Number);
-          if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) return parts;
-          return [0, 0, 0];
+          if (parts.length === 3 && parts.every(n => Number.isFinite(n))) return parts;
+          return [0,0,0];
         }
 
         function ensureModelHotspots(modelKey) {
           if (HOTSPOTS_BY_MODEL[modelKey]) return;
           const clone = Object.create(null);
           for (const id of HOTSPOT_IDS) {
-            const p = BASE_HOTSPOTS[id] || [0, 0, 0];
+            const p = BASE_HOTSPOTS[id] || [0,0,0];
             clone[id] = [p[0], p[1], p[2]];
           }
           HOTSPOTS_BY_MODEL[modelKey] = clone;
@@ -591,11 +528,11 @@
             if (!el) continue;
 
             const slotName = el.getAttribute("slot");
-            const [x, y, z] = HOTSPOTS_BY_MODEL[modelKey][hotspotId];
+            const [x,y,z] = HOTSPOTS_BY_MODEL[modelKey][hotspotId];
             const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
 
             el.setAttribute("data-position", posString);
-            if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
+            if (typeof viewer.updateHotspot === "function" && slotName) {
               viewer.updateHotspot({ name: slotName, position: posString });
             }
           }
@@ -607,25 +544,26 @@
 
           if (activeKey) {
             ensureModelHotspots(activeKey);
-            HOTSPOTS_BY_MODEL[activeKey][hotspotId] = [x, y, z];
+            HOTSPOTS_BY_MODEL[activeKey][hotspotId] = [x,y,z];
           }
 
           const slotName = el.getAttribute("slot");
           const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
-
           el.setAttribute("data-position", posString);
-          if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
+
+          if (typeof viewer.updateHotspot === "function" && slotName) {
             viewer.updateHotspot({ name: slotName, position: posString });
           }
         }
 
-        // ---------- URL deep linking ----------
         function getRequestedModelKey() {
           const url = new URL(window.location.href);
           const qp = (url.searchParams.get("model") || "").trim().toLowerCase();
+
           const hash = (url.hash || "").replace(/^#/, "");
           const hp = new URLSearchParams(hash).get("model");
           const h = (hp || "").trim().toLowerCase();
+
           return qp || h || null;
         }
 
@@ -636,13 +574,12 @@
           history.replaceState(null, "", url.toString());
         }
 
-        // ---------- tuner ----------
         function initSection(sectionEl) {
           const hotspotId = sectionEl.getAttribute("data-hotspot");
           const hotspotEl = document.getElementById(hotspotId);
           if (!hotspotEl) return;
 
-          const [x0, y0, z0] = parseDataPosition(hotspotEl);
+          const [x0,y0,z0] = parseDataPosition(hotspotEl);
 
           const xSlider = sectionEl.querySelector(".hotspot-x");
           const ySlider = sectionEl.querySelector(".hotspot-y");
@@ -657,7 +594,6 @@
             const x = parseFloat(xSlider.value);
             const y = parseFloat(ySlider.value);
             const z = parseFloat(zSlider.value);
-
             setHotspotPosition(hotspotId, x, y, z);
             readout.textContent = `data-position="${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}"`;
           };
@@ -667,32 +603,29 @@
           zSlider.addEventListener("input", update);
         }
 
+        function initAllSections() {
+          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(initSection);
+        }
+
         function syncSlidersToDom() {
           document.querySelectorAll("#hotspot-controls .hotspot-section").forEach((sectionEl) => {
             const hotspotId = sectionEl.getAttribute("data-hotspot");
             const hotspotEl = document.getElementById(hotspotId);
             if (!hotspotEl) return;
 
-            const [x0, y0, z0] = parseDataPosition(hotspotEl);
+            const [x0,y0,z0] = parseDataPosition(hotspotEl);
             sectionEl.querySelector(".hotspot-x").value = x0;
             sectionEl.querySelector(".hotspot-y").value = y0;
             sectionEl.querySelector(".hotspot-z").value = z0;
-
-            const readout = sectionEl.querySelector(".hotspot-readout");
-            readout.textContent = `data-position="${x0.toFixed(3)} ${y0.toFixed(3)} ${z0.toFixed(3)}"`;
+            sectionEl.querySelector(".hotspot-readout").textContent =
+              `data-position="${x0.toFixed(3)} ${y0.toFixed(3)} ${z0.toFixed(3)}"`;
           });
-        }
-
-        function initAllSections() {
-          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(initSection);
-          syncSlidersToDom();
         }
 
         tunerToggle.addEventListener("click", () => {
           tunerPanel.classList.toggle("is-open");
         });
 
-        // ---------- hotspot scale with zoom (3D only) ----------
         function updateHotspotScale() {
           const arStatus = viewer.getAttribute("ar-status");
           if (arStatus && arStatus !== "not-presenting" && arStatus !== "failed") return;
@@ -713,14 +646,12 @@
           });
         }
 
-        // ---------- AR rotation slider ----------
         function applyModelYaw(deg) {
           viewer.setAttribute("orientation", `0deg ${deg}deg 0deg`);
         }
 
         arRotate.addEventListener("input", () => {
-          const yaw = parseFloat(arRotate.value);
-          applyModelYaw(yaw);
+          applyModelYaw(parseFloat(arRotate.value));
         });
 
         viewer.addEventListener("ar-status", () => {
@@ -731,8 +662,15 @@
           }
         });
 
-        // ---------- dimension / framing ----------
-        function logModelDiagnostics(modelKey, modelLabel) {
+        function modelSizeFromDims(d) {
+          if (!d) return null;
+          const x = Number(d.x) || 0;
+          const y = Number(d.y) || 0;
+          const z = Number(d.z) || 0;
+          return Math.max(x, y, z);
+        }
+
+        function logModelDiagnostics(modelKey, modelLabel, computedScale) {
           const src = viewer.getAttribute("src");
           const iosSrc = viewer.getAttribute("ios-src");
           const orbit = viewer.getAttribute("camera-orbit");
@@ -752,30 +690,12 @@
           console.log("scale attr:", scaleAttr);
           console.log("getDimensions():", dims);
           console.log("getBoundingBox():", bbox);
+          if (computedScale != null) console.log("computedScaleToMatchNeutrophil:", computedScale);
           console.groupEnd();
 
           return dims;
         }
 
-        function modelSizeFromDims(d) {
-          if (!d) return null;
-          const x = Number(d.x) || 0;
-          const y = Number(d.y) || 0;
-          const z = Number(d.z) || 0;
-          return Math.max(x, y, z);
-        }
-
-        function setOrbitPercent(pct) {
-          const safe = Math.max(10, Math.min(1000, pct));
-          viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${safe.toFixed(2)}%`);
-
-          requestAnimationFrame(() => {
-            if (typeof viewer.updateFraming === "function") viewer.updateFraming();
-            if (typeof viewer.jumpCameraToGoal === "function") viewer.jumpCameraToGoal();
-          });
-        }
-
-        // ---------- model switching ----------
         function renderModelMenu() {
           const renderRow = (arr) => arr.map(m => {
             const cls = m.key === activeKey ? "model-btn active" : "model-btn";
@@ -805,8 +725,11 @@
           topbar.style.display = "flex";
           renderModelMenu();
 
-          // Reset orbit to baseline before load (minimize carry-over)
-          viewer.setAttribute("camera-orbit", `${REF_ORBIT.theta} ${REF_ORBIT.phi} ${REF_ORBIT.pct}%`);
+          // Keep the SAME orbit for all models (neutrophil look)
+          viewer.setAttribute("camera-orbit", "0deg 70deg 105%");
+          viewer.setAttribute("camera-target", "auto auto auto");
+
+          // Reset scale before load so we don't carry over
           viewer.removeAttribute("scale");
 
           viewer.removeAttribute("src");
@@ -820,29 +743,40 @@
           viewer.addEventListener("load", () => {
             // Apply per-model hotspots
             applyHotspotsForModel(key);
+
+            // Update tuner sliders to match the now-active model
             initAllSections();
+            syncSlidersToDom();
             updateHotspotScale();
 
             // Read dimensions
-            const dims = logModelDiagnostics(key, m.label);
+            const dims = logModelDiagnostics(key, m.label, null);
             const size = modelSizeFromDims(dims);
 
-            // If neutrophil, refresh refSize from the actual file
+            // If neutrophil, update reference size from the actual file
             if (key === REF_KEY && size) {
               refSize = size;
+              console.log(`[WBC] updated refSize from neutrophil: ${refSize}`);
             }
 
-            // --- IMPORTANT FIX ---
-            // To match neutrophil's on-screen framing:
-            // distance ∝ size  => orbitPercent ∝ size
-            // so: pct = REF_PCT * (size / refSize)
-            if (refSize && size && size > 0) {
-              const adjustedPct = REF_ORBIT.pct * (size / refSize);
-              console.log(`[WBC] framing: refSize=${refSize.toFixed(6)} size=${size.toFixed(6)} -> orbit=${adjustedPct.toFixed(2)}%`);
-              setOrbitPercent(adjustedPct);
-            } else {
-              setOrbitPercent(REF_ORBIT.pct);
+            // SCALE FIX:
+            // Make every model match neutrophil's size as model-viewer sees it.
+            let computedScale = null;
+            if (key !== REF_KEY && refSize && size && size > 0) {
+              computedScale = refSize / size;  // if model is smaller, scale up
+              const s = computedScale.toFixed(6);
+              viewer.setAttribute("scale", `${s} ${s} ${s}`);
+              console.log(`[WBC] applying scale to match neutrophil: ref=${refSize.toFixed(6)} size=${size.toFixed(6)} scale=${s}`);
             }
+
+            // Re-log after scale is applied (so you can confirm)
+            requestAnimationFrame(() => {
+              logModelDiagnostics(key, m.label, computedScale);
+
+              // Force a clean framing recompute
+              if (typeof viewer.updateFraming === "function") viewer.updateFraming();
+              if (typeof viewer.jumpCameraToGoal === "function") viewer.jumpCameraToGoal();
+            });
           }, { once: true });
 
           viewer.addEventListener("error", (ev) => {
@@ -851,7 +785,6 @@
           }, { once: true });
         }
 
-        // ---------- landing ----------
         function buildLanding() {
           const renderGrid = (gridEl, arr) => {
             gridEl.innerHTML = arr.map(m => `
@@ -879,7 +812,7 @@
         viewer.style.display = "none";
         tunerPanel.classList.remove("is-open");
 
-        // Auto-select from URL (?model=... or #model=...)
+        // Auto-select from URL
         const requested = getRequestedModelKey();
         if (requested && MODEL_BY_KEY.has(requested)) {
           selectModel(requested);
