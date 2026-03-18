@@ -69,14 +69,23 @@
         font-size: 14px;
       }
 
-      #landing .grid {
+      .group-title {
+        margin: 14px 0 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        opacity: 0.85;
+      }
+
+      .grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
       }
 
       @media (max-width: 540px) {
-        #landing .grid { grid-template-columns: 1fr; }
+        .grid { grid-template-columns: 1fr; }
       }
 
       .pick {
@@ -113,13 +122,20 @@
       #model-menu {
         pointer-events: auto;
         display: inline-flex;
+        flex-direction: column;
         gap: 8px;
-        align-items: center;
+        align-items: flex-start;
         padding: 8px 10px;
         border-radius: 14px;
         background: rgba(0,0,0,0.65);
         border: 1px solid rgba(255,255,255,0.12);
         backdrop-filter: blur(6px);
+      }
+
+      .model-row {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
         flex-wrap: wrap;
       }
 
@@ -141,15 +157,9 @@
         opacity: 1;
       }
 
+      /* Hidden from UI, logic retained in JS if needed later */
       #tuner-toggle {
-        pointer-events: auto;
-        cursor: pointer;
-        color: #fff;
-        background: rgba(0,0,0,0.65);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 999px;
-        padding: 8px 12px;
-        font-size: 13px;
+        display: none;
       }
 
       #errorbox {
@@ -290,6 +300,7 @@
       model-viewer[ar-status="session-started"] .hotspot-line { height: 30px; }
       model-viewer[ar-status="session-started"] .hotspot-description { display: none !important; }
 
+      /* Hidden from UI, kept for tuner logic if needed later */
       #hotspot-controls {
         position: fixed;
         right: 0;
@@ -302,10 +313,10 @@
         color: #fff;
         font-size: 12px;
         z-index: 10000;
-        display: none;
+        display: none !important;
       }
 
-      #hotspot-controls.is-open { display: block; }
+      #hotspot-controls.is-open { display: none !important; }
       #hotspot-controls h3 { margin: 0 0 8px; font-size: 14px; }
       #hotspot-controls label { display: block; margin: 2px 0; }
       #hotspot-controls input[type="range"] { width: 100%; }
@@ -349,7 +360,12 @@
       <div class="card">
         <h1>Select a cell type</h1>
         <p>Choose a model to open the viewer.</p>
-        <div class="grid" id="landing-grid"></div>
+
+        <div class="group-title">Phils</div>
+        <div class="grid" id="landing-grid-phils"></div>
+
+        <div class="group-title">Cytes</div>
+        <div class="grid" id="landing-grid-cytes"></div>
       </div>
     </div>
 
@@ -461,6 +477,7 @@
       <input id="ar-rotate" type="range" min="-180" max="180" step="1" value="0" />
     </div>
 
+    <!-- Hidden from UI, kept in DOM so tuner logic can still exist if needed later -->
     <div id="hotspot-controls">
       <h3>Hotspot Position Tuner</h3>
 
@@ -514,20 +531,26 @@
         const tunerToggle = document.getElementById("tuner-toggle");
         const arRotate = document.getElementById("ar-rotate");
         const landing = document.getElementById("landing");
-        const landingGrid = document.getElementById("landing-grid");
+        const landingGridPhils = document.getElementById("landing-grid-phils");
+        const landingGridCytes = document.getElementById("landing-grid-cytes");
         const topbar = document.getElementById("topbar");
         const modelMenu = document.getElementById("model-menu");
         const errorbox = document.getElementById("errorbox");
 
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-        const MODELS = [
+        const PHILS = [
           { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb", usdz: "./neutrophil.usdz" },
           { key: "basophil", label: "Basophil", glb: "./basophil.glb", usdz: "./basophil.usdz" },
           { key: "eosinophil", label: "Eosinophil", glb: "./eosinophil.glb", usdz: "./eosinophil.usdz" },
+        ];
+
+        const CYTES = [
           { key: "monocyte", label: "Monocyte", glb: "./monocyte.glb", usdz: "./monocyte.usdz" },
           { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb", usdz: "./lymphocyte.usdz" },
         ];
+
+        const MODELS = [...PHILS, ...CYTES];
 
         const HOTSPOTS_ALL = ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"];
 
@@ -697,9 +720,11 @@
           });
         }
 
-        tunerToggle.addEventListener("click", () => {
-          tunerPanel.classList.toggle("is-open");
-        });
+        if (tunerToggle) {
+          tunerToggle.addEventListener("click", () => {
+            tunerPanel.classList.toggle("is-open");
+          });
+        }
 
         function updateHotspotScale() {
           const arStatus = viewer.getAttribute("ar-status");
@@ -741,10 +766,16 @@
         });
 
         function renderModelMenu() {
-          modelMenu.innerHTML = MODELS.map((m) => {
-            const cls = m.key === activeKey ? "model-btn active" : "model-btn";
-            return `<button class="${cls}" type="button" data-model="${m.key}">${m.label}</button>`;
-          }).join("");
+          const renderRow = (arr) =>
+            arr.map((m) => {
+              const cls = m.key === activeKey ? "model-btn active" : "model-btn";
+              return `<button class="${cls}" type="button" data-model="${m.key}">${m.label}</button>`;
+            }).join("");
+
+          modelMenu.innerHTML = `
+            <div class="model-row">${renderRow(PHILS)}</div>
+            <div class="model-row">${renderRow(CYTES)}</div>
+          `;
 
           modelMenu.querySelectorAll("button[data-model]").forEach((btn) => {
             btn.addEventListener("click", () => {
@@ -790,15 +821,20 @@
         }
 
         function buildLanding() {
-          landingGrid.innerHTML = MODELS.map((m) => `
-            <button class="pick" type="button" data-model="${m.key}">${m.label}</button>
-          `).join("");
+          const renderGrid = (gridEl, arr) => {
+            gridEl.innerHTML = arr.map((m) => `
+              <button class="pick" type="button" data-model="${m.key}">${m.label}</button>
+            `).join("");
 
-          landingGrid.querySelectorAll("button[data-model]").forEach((btn) => {
-            btn.addEventListener("click", () => {
-              selectModel(btn.getAttribute("data-model"));
+            gridEl.querySelectorAll("button[data-model]").forEach((btn) => {
+              btn.addEventListener("click", () => {
+                selectModel(btn.getAttribute("data-model"));
+              });
             });
-          });
+          };
+
+          renderGrid(landingGridPhils, PHILS);
+          renderGrid(landingGridCytes, CYTES);
         }
 
         buildLanding();
