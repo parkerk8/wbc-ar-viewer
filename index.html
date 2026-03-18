@@ -32,17 +32,15 @@
         display: none;
       }
 
-      /* ===== Landing ===== */
       #landing {
         position: fixed;
         inset: 0;
         display: grid;
         place-items: center;
         padding: 18px;
-        background:
-          radial-gradient(1200px 800px at 50% 20%, rgba(66,133,244,0.20), rgba(0,0,0,0.0) 60%),
-          radial-gradient(900px 600px at 20% 80%, rgba(76,175,80,0.16), rgba(0,0,0,0.0) 55%),
-          #0e0f12;
+        background: radial-gradient(1200px 800px at 50% 20%, rgba(66,133,244,0.20), rgba(0,0,0,0.0) 60%),
+                    radial-gradient(900px 600px at 20% 80%, rgba(76,175,80,0.16), rgba(0,0,0,0.0) 55%),
+                    #0e0f12;
         color: #fff;
         z-index: 10010;
       }
@@ -99,7 +97,6 @@
         background: rgba(66,133,244,0.10);
       }
 
-      /* ===== Topbar controls (model select + tuner) ===== */
       #topbar {
         position: fixed;
         top: calc(env(safe-area-inset-top) + 10px);
@@ -155,7 +152,6 @@
         font-size: 13px;
       }
 
-      /* ===== Error banner ===== */
       #errorbox {
         position: fixed;
         left: 10px;
@@ -179,17 +175,14 @@
         transform: translateX(-50%);
         bottom: calc(env(safe-area-inset-bottom) + 20px);
         z-index: 9999;
-
         background-color: #fff;
         padding: 0 26px;
         min-width: 220px;
         height: 48px;
         line-height: 48px;
-
         font-size: 16px;
         font-weight: 500;
         color: #4285f4;
-
         border-radius: 24px;
         border: 1px solid #dadce0;
         white-space: nowrap;
@@ -230,9 +223,6 @@
 
       model-viewer[ar-tracking="not-tracking"] > #ar-failure { display: block; }
 
-      /* ========================
-         HOTSPOTS
-         ======================== */
       .hotspot {
         border: none;
         padding: 0;
@@ -294,16 +284,12 @@
 
       .hotspot:hover .hotspot-description { display: inline; }
 
-      /* AR MODE: smaller hotspots + hide descriptions */
       model-viewer[ar-status="session-started"] .hotspot { --hotspot-scale: 0.55; }
       model-viewer[ar-status="session-started"] .hotspot-label { padding: 6px 9px; font-size: 12px; }
       model-viewer[ar-status="session-started"] .hotspot-anchor-dot { width: 8px; height: 8px; }
       model-viewer[ar-status="session-started"] .hotspot-line { height: 30px; }
       model-viewer[ar-status="session-started"] .hotspot-description { display: none !important; }
 
-      /* ========================
-         HOTSPOT TUNER PANEL
-         ======================== */
       #hotspot-controls {
         position: fixed;
         right: 0;
@@ -326,23 +312,17 @@
       .hotspot-section { margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 6px; }
       .hotspot-readout { margin-top: 2px; font-family: monospace; font-size: 11px; }
 
-      /* ========================
-         AR ROTATION SLIDER (USER-FACING)
-         ======================== */
       #ar-rotate-bar {
         position: fixed;
         left: 50%;
         transform: translateX(-50%);
         bottom: calc(env(safe-area-inset-bottom) + 14px);
         z-index: 10001;
-
         width: min(560px, calc(100vw - 24px));
         padding: 10px 12px;
         border-radius: 16px;
-
         background: rgba(0, 0, 0, 0.65);
         color: #fff;
-
         display: none;
         gap: 10px;
         align-items: center;
@@ -365,7 +345,6 @@
   </head>
 
   <body>
-    <!-- Landing (no models loaded until user chooses) -->
     <div id="landing">
       <div class="card">
         <h1>Select a cell type</h1>
@@ -374,7 +353,6 @@
       </div>
     </div>
 
-    <!-- Topbar (shown after selection) -->
     <div id="topbar">
       <div id="model-menu"></div>
       <button id="tuner-toggle" type="button">Tuner</button>
@@ -396,7 +374,6 @@
     >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
-      <!-- Nucleus -->
       <button
         id="hotspot-nucleus"
         slot="hotspot-nucleus"
@@ -412,7 +389,6 @@
         </div>
       </button>
 
-      <!-- Golgi Complex -->
       <button
         id="hotspot-golgi"
         slot="hotspot-golgi"
@@ -428,7 +404,6 @@
         </div>
       </button>
 
-      <!-- Mitochondrion -->
       <button
         id="hotspot-mito"
         slot="hotspot-mito"
@@ -444,7 +419,6 @@
         </div>
       </button>
 
-      <!-- Ribosome -->
       <button
         id="hotspot-ribosome"
         slot="hotspot-ribosome"
@@ -460,7 +434,6 @@
         </div>
       </button>
 
-      <!-- Primary Granules -->
       <button
         id="hotspot-granules"
         slot="hotspot-granules"
@@ -483,13 +456,11 @@
       <button id="ar-failure">AR is not tracking!</button>
     </model-viewer>
 
-    <!-- User-facing AR rotation slider -->
     <div id="ar-rotate-bar">
       <div class="label">Rotate</div>
       <input id="ar-rotate" type="range" min="-180" max="180" step="1" value="0" />
     </div>
 
-    <!-- Hotspot tuner (toggle with on-screen button) -->
     <div id="hotspot-controls">
       <h3>Hotspot Position Tuner</h3>
 
@@ -558,13 +529,7 @@
           { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb", usdz: "./lymphocyte.usdz" },
         ];
 
-        const HOTSPOTS_ALL = [
-          "hotspot-nucleus",
-          "hotspot-golgi",
-          "hotspot-mito",
-          "hotspot-ribosome",
-          "hotspot-granules",
-        ];
+        const HOTSPOTS_ALL = ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"];
 
         const HOTSPOTS_ENABLED = {
           neutrophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
