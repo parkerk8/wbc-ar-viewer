@@ -34,16 +34,7 @@
       }
 
       #landing {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        padding: 18px;
-        background: radial-gradient(1200px 800px at 50% 20%, rgba(66,133,244,0.20), rgba(0,0,0,0.0) 60%),
-                    radial-gradient(900px 600px at 20% 80%, rgba(76,175,80,0.16), rgba(0,0,0,0.0) 55%),
-                    #0e0f12;
-        color: #fff;
-        z-index: 10010;
+        display: none;
       }
 
       #landing .card {
@@ -375,22 +366,159 @@
       <button id="tuner-toggle" type="button">Tuner</button>
     </div>
 
-  <model-viewer
-    id="cellViewer"
-    shadow-intensity="1"
-    ar
-    ar-modes="webxr"
-    camera-controls
-    disable-pan
-    touch-action="none"
-    interaction-prompt="none"
-    camera-target="auto auto auto"
-    camera-orbit="0deg 70deg 105%"
-    min-camera-orbit="auto auto 80%"
-    max-camera-orbit="auto auto 140%"
-  >
+    <model-viewer
+      id="cellViewer"
+      shadow-intensity="1"
+      ar
+      ar-modes="webxr"
+      camera-controls
+      disable-pan
+      touch-action="none"
+      interaction-prompt="none"
+      camera-target="auto auto auto"
+      camera-orbit="0deg 70deg 105%"
+      min-camera-orbit="auto auto 80%"
+      max-camera-orbit="auto auto 140%"
+    >
       <button slot="ar-button" id="ar-button">View in your space</button>
 
+      <!-- Basic cell hotspots -->
+      <button
+        id="hotspot-basic-rough-er"
+        slot="hotspot-basic-rough-er"
+        class="hotspot"
+        data-position="-2.200 0.900 -1.300"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Rough ER
+          <span class="hotspot-description">Membrane network studded with ribosomes for protein synthesis.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-smooth-er"
+        slot="hotspot-basic-smooth-er"
+        class="hotspot"
+        data-position="-0.300 0.700 2.000"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Smooth ER
+          <span class="hotspot-description">Membrane network involved in lipid synthesis and detoxification.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-nucleus"
+        slot="hotspot-basic-nucleus"
+        class="hotspot"
+        data-position="-0.600 1.900 -2.000"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Nucleus
+          <span class="hotspot-description">Contains genetic material and controls cell activities.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-nucleolus"
+        slot="hotspot-basic-nucleolus"
+        class="hotspot"
+        data-position="-0.150 2.200 -2.350"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Nucleolus
+          <span class="hotspot-description">Produces rRNA and helps assemble ribosome subunits.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-mitochondria"
+        slot="hotspot-basic-mitochondria"
+        class="hotspot"
+        data-position="2.200 0.100 -1.900"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Mitochondria
+          <span class="hotspot-description">Produce ATP for the cell.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-ribosome"
+        slot="hotspot-basic-ribosome"
+        class="hotspot"
+        data-position="-1.500 1.100 -0.700"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Ribosome
+          <span class="hotspot-description">Site of protein synthesis.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-lysosome"
+        slot="hotspot-basic-lysosome"
+        class="hotspot"
+        data-position="2.300 -0.900 0.900"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Lysosome
+          <span class="hotspot-description">Breaks down waste and cellular debris.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-golgi"
+        slot="hotspot-basic-golgi"
+        class="hotspot"
+        data-position="1.100 0.900 0.200"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Golgi Body
+          <span class="hotspot-description">Modifies, sorts, and packages proteins and lipids.</span>
+        </div>
+      </button>
+
+      <button
+        id="hotspot-basic-membrane"
+        slot="hotspot-basic-membrane"
+        class="hotspot"
+        data-position="0.000 -1.700 2.800"
+        data-normal="0 1 0"
+      >
+        <div class="hotspot-anchor-dot"></div>
+        <div class="hotspot-line"></div>
+        <div class="hotspot-label">
+          Plasma Membrane
+          <span class="hotspot-description">Selective barrier surrounding the cell.</span>
+        </div>
+      </button>
+
+      <!-- WBC hotspots -->
       <button
         id="hotspot-nucleus"
         slot="hotspot-nucleus"
@@ -540,6 +668,13 @@
 
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+        const BASIC_CELL = {
+          key: "basic_cell",
+          label: "Basic Cell",
+          glb: "./basic_cell.glb",
+          usdz: "./basic_cell.usdz"
+        };
+
         const PHILS = [
           { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb", usdz: "./neutrophil.usdz" },
           { key: "basophil", label: "Basophil", glb: "./basophil.glb", usdz: "./basophil.usdz" },
@@ -551,19 +686,51 @@
           { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb", usdz: "./lymphocyte.usdz" },
         ];
 
-        const MODELS = [...PHILS, ...CYTES];
+        const MODELS = [BASIC_CELL, ...PHILS, ...CYTES];
 
-        const HOTSPOTS_ALL = ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"];
+        const BASIC_HOTSPOTS = [
+          "hotspot-basic-rough-er",
+          "hotspot-basic-smooth-er",
+          "hotspot-basic-nucleus",
+          "hotspot-basic-nucleolus",
+          "hotspot-basic-mitochondria",
+          "hotspot-basic-ribosome",
+          "hotspot-basic-lysosome",
+          "hotspot-basic-golgi",
+          "hotspot-basic-membrane"
+        ];
+
+        const WBC_HOTSPOTS = [
+          "hotspot-nucleus",
+          "hotspot-golgi",
+          "hotspot-mito",
+          "hotspot-ribosome",
+          "hotspot-granules"
+        ];
+
+        const HOTSPOTS_ALL = [...BASIC_HOTSPOTS, ...WBC_HOTSPOTS];
 
         const HOTSPOTS_ENABLED = {
-          neutrophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
-          basophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
-          eosinophil: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
-          monocyte: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome", "hotspot-granules"],
+          basic_cell: [...BASIC_HOTSPOTS],
+          neutrophil: [...WBC_HOTSPOTS],
+          basophil: [...WBC_HOTSPOTS],
+          eosinophil: [...WBC_HOTSPOTS],
+          monocyte: [...WBC_HOTSPOTS],
           lymphocyte: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome"],
         };
 
         const HOTSPOT_PRESETS = {
+          basic_cell: {
+            "hotspot-basic-rough-er": [-2.200, 0.900, -1.300],
+            "hotspot-basic-smooth-er": [-0.300, 0.700, 2.000],
+            "hotspot-basic-nucleus": [-0.600, 1.900, -2.000],
+            "hotspot-basic-nucleolus": [-0.150, 2.200, -2.350],
+            "hotspot-basic-mitochondria": [2.200, 0.100, -1.900],
+            "hotspot-basic-ribosome": [-1.500, 1.100, -0.700],
+            "hotspot-basic-lysosome": [2.300, -0.900, 0.900],
+            "hotspot-basic-golgi": [1.100, 0.900, 0.200],
+            "hotspot-basic-membrane": [0.000, -1.700, 2.800]
+          },
           neutrophil: {
             "hotspot-nucleus": [-1.300, 2.000, -2.200],
             "hotspot-golgi": [0.900, 0.600, -0.100],
@@ -846,6 +1013,8 @@
         const requested = getRequestedModelKey();
         if (requested && MODELS.some((m) => m.key === requested)) {
           selectModel(requested);
+        } else {
+          selectModel("basic_cell");
         }
 
         viewer.addEventListener("camera-change", updateHotspotScale);
