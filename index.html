@@ -91,6 +91,11 @@
         opacity: 1;
       }
 
+      .model-btn:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+
       #tuner-toggle {
         appearance: none;
         -webkit-appearance: none;
@@ -328,102 +333,104 @@
       <button id="tuner-toggle" type="button">Tuner</button>
     </div>
 
-    <model-viewer
-      id="cellViewer"
-      shadow-intensity="1"
-      ar
-      ar-modes="webxr scene-viewer quick-look"
-      camera-controls
-      disable-pan
-      touch-action="none"
-      interaction-prompt="none"
-      camera-target="auto auto auto"
-      camera-orbit="0deg 70deg 105%"
-      min-camera-orbit="auto auto 80%"
-      max-camera-orbit="auto auto 140%"
-    >
-      <button slot="ar-button" id="ar-button">View in your space</button>
+    <div id="viewer-host">
+      <model-viewer
+        id="cellViewer"
+        shadow-intensity="1"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        disable-pan
+        touch-action="none"
+        interaction-prompt="none"
+        camera-target="auto auto auto"
+        camera-orbit="0deg 70deg 105%"
+        min-camera-orbit="auto auto 80%"
+        max-camera-orbit="auto auto 140%"
+      >
+        <button slot="ar-button" id="ar-button">View in your space</button>
 
-      <!-- Default hotspots -->
-      <button id="hotspot-default-rough-er" slot="hotspot-default-rough-er" class="hotspot" data-position="-0.800 0.100 0.700" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Rough ER<span class="hotspot-description">Membrane network studded with ribosomes for protein synthesis.</span></div>
-      </button>
-      <button id="hotspot-default-smooth-er" slot="hotspot-default-smooth-er" class="hotspot" data-position="-1.600 0.100 1.700" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Smooth ER<span class="hotspot-description">Membrane network involved in lipid synthesis and detoxification.</span></div>
-      </button>
-      <button id="hotspot-default-nucleus" slot="hotspot-default-nucleus" class="hotspot" data-position="-0.300 1.000 -0.900" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Nucleus<span class="hotspot-description">Contains genetic material and controls cell activities.</span></div>
-      </button>
-      <button id="hotspot-default-nucleolus" slot="hotspot-default-nucleolus" class="hotspot" data-position="-0.300 0.600 -0.400" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Nucleolus<span class="hotspot-description">Produces rRNA and helps assemble ribosome subunits.</span></div>
-      </button>
-      <button id="hotspot-default-mitochondria" slot="hotspot-default-mitochondria" class="hotspot" data-position="-0.300 0.100 3.200" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Mitochondria<span class="hotspot-description">Produce ATP for the cell.</span></div>
-      </button>
-      <button id="hotspot-default-ribosome" slot="hotspot-default-ribosome" class="hotspot" data-position="-2.100 0.100 0.400" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Ribosome<span class="hotspot-description">Site of protein synthesis.</span></div>
-      </button>
-      <button id="hotspot-default-lysosome" slot="hotspot-default-lysosome" class="hotspot" data-position="2.000 0.100 -0.100" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Lysosome<span class="hotspot-description">Breaks down waste and cellular debris.</span></div>
-      </button>
-      <button id="hotspot-default-golgi" slot="hotspot-default-golgi" class="hotspot" data-position="1.000 0.100 1.800" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Golgi Body<span class="hotspot-description">Modifies, sorts, and packages proteins and lipids.</span></div>
-      </button>
-      <button id="hotspot-default-membrane" slot="hotspot-default-membrane" class="hotspot" data-position="0.000 -0.200 3.900" data-normal="0 1 0">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Plasma Membrane<span class="hotspot-description">Selective barrier surrounding the cell.</span></div>
-      </button>
+        <!-- Default hotspots -->
+        <button id="hotspot-default-rough-er" slot="hotspot-default-rough-er" class="hotspot" data-position="-0.800 0.100 0.700" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Rough ER<span class="hotspot-description">Membrane network studded with ribosomes for protein synthesis.</span></div>
+        </button>
+        <button id="hotspot-default-smooth-er" slot="hotspot-default-smooth-er" class="hotspot" data-position="-1.600 0.100 1.700" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Smooth ER<span class="hotspot-description">Membrane network involved in lipid synthesis and detoxification.</span></div>
+        </button>
+        <button id="hotspot-default-nucleus" slot="hotspot-default-nucleus" class="hotspot" data-position="-0.300 1.000 -0.900" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Nucleus<span class="hotspot-description">Contains genetic material and controls cell activities.</span></div>
+        </button>
+        <button id="hotspot-default-nucleolus" slot="hotspot-default-nucleolus" class="hotspot" data-position="-0.300 0.600 -0.400" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Nucleolus<span class="hotspot-description">Produces rRNA and helps assemble ribosome subunits.</span></div>
+        </button>
+        <button id="hotspot-default-mitochondria" slot="hotspot-default-mitochondria" class="hotspot" data-position="-0.300 0.100 3.200" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Mitochondria<span class="hotspot-description">Produce ATP for the cell.</span></div>
+        </button>
+        <button id="hotspot-default-ribosome" slot="hotspot-default-ribosome" class="hotspot" data-position="-2.100 0.100 0.400" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Ribosome<span class="hotspot-description">Site of protein synthesis.</span></div>
+        </button>
+        <button id="hotspot-default-lysosome" slot="hotspot-default-lysosome" class="hotspot" data-position="2.000 0.100 -0.100" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Lysosome<span class="hotspot-description">Breaks down waste and cellular debris.</span></div>
+        </button>
+        <button id="hotspot-default-golgi" slot="hotspot-default-golgi" class="hotspot" data-position="1.000 0.100 1.800" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Golgi Body<span class="hotspot-description">Modifies, sorts, and packages proteins and lipids.</span></div>
+        </button>
+        <button id="hotspot-default-membrane" slot="hotspot-default-membrane" class="hotspot" data-position="0.000 -0.200 3.900" data-normal="0 1 0">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Plasma Membrane<span class="hotspot-description">Selective barrier surrounding the cell.</span></div>
+        </button>
 
-      <!-- WBC hotspots -->
-      <button id="hotspot-nucleus" slot="hotspot-nucleus" class="hotspot" data-position="-1.300 2.000 -2.200" data-normal="0.973 -0.164 0.164">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Nucleus<span class="hotspot-description">Contains genetic material and controls cell activities.</span></div>
-      </button>
-      <button id="hotspot-golgi" slot="hotspot-golgi" class="hotspot" data-position="0.900 0.600 -0.100" data-normal="1.000 0.600 -0.700">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Golgi Complex<span class="hotspot-description">Packages and modifies proteins and lipids.</span></div>
-      </button>
-      <button id="hotspot-mito" slot="hotspot-mito" class="hotspot" data-position="3.600 0.200 -3.600" data-normal="-0.842 -0.507 -0.181">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Mitochondrion<span class="hotspot-description">Produces energy (ATP) for the cell.</span></div>
-      </button>
-      <button id="hotspot-ribosome" slot="hotspot-ribosome" class="hotspot" data-position="2.300 -0.200 -4.300" data-normal="-0.507 -0.181 0.842">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Ribosome<span class="hotspot-description">Site of protein synthesis.</span></div>
-      </button>
-      <button id="hotspot-granules" slot="hotspot-granules" class="hotspot" data-position="-2.900 -1.600 5.800" data-normal="0.521 0.181 -0.834">
-        <div class="hotspot-anchor-dot"></div>
-        <div class="hotspot-line"></div>
-        <div class="hotspot-label">Primary Granules<span class="hotspot-description">Granule structures with stored enzymes or molecules.</span></div>
-      </button>
+        <!-- WBC hotspots -->
+        <button id="hotspot-nucleus" slot="hotspot-nucleus" class="hotspot" data-position="-1.300 2.000 -2.200" data-normal="0.973 -0.164 0.164">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Nucleus<span class="hotspot-description">Contains genetic material and controls cell activities.</span></div>
+        </button>
+        <button id="hotspot-golgi" slot="hotspot-golgi" class="hotspot" data-position="0.900 0.600 -0.100" data-normal="1.000 0.600 -0.700">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Golgi Complex<span class="hotspot-description">Packages and modifies proteins and lipids.</span></div>
+        </button>
+        <button id="hotspot-mito" slot="hotspot-mito" class="hotspot" data-position="3.600 0.200 -3.600" data-normal="-0.842 -0.507 -0.181">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Mitochondrion<span class="hotspot-description">Produces energy (ATP) for the cell.</span></div>
+        </button>
+        <button id="hotspot-ribosome" slot="hotspot-ribosome" class="hotspot" data-position="2.300 -0.200 -4.300" data-normal="-0.507 -0.181 0.842">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Ribosome<span class="hotspot-description">Site of protein synthesis.</span></div>
+        </button>
+        <button id="hotspot-granules" slot="hotspot-granules" class="hotspot" data-position="-2.900 -1.600 5.800" data-normal="0.521 0.181 -0.834">
+          <div class="hotspot-anchor-dot"></div>
+          <div class="hotspot-line"></div>
+          <div class="hotspot-label">Primary Granules<span class="hotspot-description">Granule structures with stored enzymes or molecules.</span></div>
+        </button>
 
-      <div id="ar-prompt">
-        <img src="hand.png" alt="Move phone to find surface" />
-      </div>
+        <div id="ar-prompt">
+          <img src="hand.png" alt="Move phone to find surface" />
+        </div>
 
-      <button id="ar-failure">AR is not tracking!</button>
-    </model-viewer>
+        <button id="ar-failure">AR is not tracking!</button>
+      </model-viewer>
+    </div>
 
     <div id="ar-rotate-bar">
       <div class="label">Rotate</div>
@@ -454,7 +461,6 @@
 
     <script>
       window.addEventListener("DOMContentLoaded", () => {
-        const viewer = document.getElementById("cellViewer");
         const tunerPanel = document.getElementById("hotspot-controls");
         const tunerToggle = document.getElementById("tuner-toggle");
         const arRotate = document.getElementById("ar-rotate");
@@ -462,8 +468,10 @@
         const topbar = document.getElementById("topbar");
         const modelMenu = document.getElementById("model-menu");
         const errorbox = document.getElementById("errorbox");
+        const viewerHost = document.getElementById("viewer-host");
 
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const switchDelayMs = isIOS ? 250 : 0;
 
         const DEFAULT_MODEL = {
           key: "default",
@@ -565,6 +573,10 @@
         };
 
         let activeKey = null;
+        let viewer = document.getElementById("cellViewer");
+        const viewerTemplate = viewer.cloneNode(true);
+        let activeLoadToken = 0;
+        let isSwitching = false;
 
         const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
@@ -578,8 +590,12 @@
           errorbox.textContent = msg;
         }
 
+        function sleep(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
         function parseDataPosition(el) {
-          const raw = (el.getAttribute("data-position") || "").trim();
+          const raw = (el?.getAttribute("data-position") || "").trim();
           const parts = raw.split(/\s+/).map(Number);
           if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) return parts;
           return [0, 0, 0];
@@ -603,8 +619,13 @@
           history.replaceState(null, "", url.toString());
         }
 
+        function applyModelYaw(deg) {
+          if (!viewer) return;
+          viewer.setAttribute("orientation", `0deg ${deg}deg 0deg`);
+        }
+
         function setHotspotPosition(hotspotId, x, y, z) {
-          const el = document.getElementById(hotspotId);
+          const el = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
           if (!el) return;
 
           const slotName = el.getAttribute("slot");
@@ -629,7 +650,7 @@
         }
 
         function setHotspotVisible(hotspotId, visible) {
-          const el = document.getElementById(hotspotId);
+          const el = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
           if (!el) return;
           el.style.display = visible ? "" : "none";
         }
@@ -639,56 +660,74 @@
           HOTSPOTS_ALL.forEach((id) => setHotspotVisible(id, enabled.has(id)));
         }
 
-        function initSection(sectionEl) {
+        function updateSectionReadout(sectionEl) {
           const hotspotId = sectionEl.getAttribute("data-hotspot");
-          const hotspotEl = document.getElementById(hotspotId);
-          if (!hotspotEl) return;
+          const hotspotEl = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
+          const readout = sectionEl.querySelector(".hotspot-readout");
+          const [x, y, z] = parseDataPosition(hotspotEl);
+          readout.textContent = `data-position="${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}"`;
+        }
 
-          const [x0, y0, z0] = parseDataPosition(hotspotEl);
-
+        function syncSectionFromHotspot(sectionEl) {
+          const hotspotId = sectionEl.getAttribute("data-hotspot");
+          const hotspotEl = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
           const xSlider = sectionEl.querySelector(".hotspot-x");
           const ySlider = sectionEl.querySelector(".hotspot-y");
           const zSlider = sectionEl.querySelector(".hotspot-z");
-          const readout = sectionEl.querySelector(".hotspot-readout");
 
-          xSlider.value = x0;
-          ySlider.value = y0;
-          zSlider.value = z0;
+          if (!hotspotEl) {
+            sectionEl.style.display = "none";
+            return;
+          }
 
-          const update = () => {
-            const x = parseFloat(xSlider.value);
-            const y = parseFloat(ySlider.value);
-            const z = parseFloat(zSlider.value);
+          const visible = hotspotEl.style.display !== "none";
+          sectionEl.style.display = visible ? "" : "none";
 
-            setHotspotPosition(hotspotId, x, y, z);
-            readout.textContent = `data-position="${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}"`;
-          };
+          if (!visible) return;
 
-          xSlider.addEventListener("input", update);
-          ySlider.addEventListener("input", update);
-          zSlider.addEventListener("input", update);
-
-          update();
+          const [x, y, z] = parseDataPosition(hotspotEl);
+          xSlider.value = x;
+          ySlider.value = y;
+          zSlider.value = z;
+          updateSectionReadout(sectionEl);
         }
 
-        function initAllSections() {
+        function initTunerSectionsOnce() {
           document.querySelectorAll("#hotspot-controls .hotspot-section").forEach((section) => {
-            const hotspotId = section.getAttribute("data-hotspot");
-            const el = document.getElementById(hotspotId);
-            const visible = el && el.style.display !== "none";
+            if (section.dataset.bound === "true") return;
 
-            section.style.display = visible ? "" : "none";
-            if (visible) initSection(section);
+            const hotspotId = section.getAttribute("data-hotspot");
+            const xSlider = section.querySelector(".hotspot-x");
+            const ySlider = section.querySelector(".hotspot-y");
+            const zSlider = section.querySelector(".hotspot-z");
+
+            const update = () => {
+              const x = parseFloat(xSlider.value);
+              const y = parseFloat(ySlider.value);
+              const z = parseFloat(zSlider.value);
+              setHotspotPosition(hotspotId, x, y, z);
+              updateSectionReadout(section);
+            };
+
+            xSlider.addEventListener("input", update);
+            ySlider.addEventListener("input", update);
+            zSlider.addEventListener("input", update);
+
+            section.dataset.bound = "true";
           });
         }
 
-        tunerToggle.addEventListener("click", () => {
-          tunerPanel.classList.toggle("is-open");
-        });
+        function refreshAllTunerSections() {
+          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(syncSectionFromHotspot);
+        }
 
         function updateHotspotScale() {
+          if (!viewer) return;
+
           const arStatus = viewer.getAttribute("ar-status");
           if (arStatus && arStatus !== "not-presenting" && arStatus !== "failed") return;
+
+          if (typeof viewer.getCameraOrbit !== "function") return;
 
           const orbit = viewer.getCameraOrbit();
           const radius = orbit.radius;
@@ -706,28 +745,33 @@
           });
         }
 
-        function applyModelYaw(deg) {
-          viewer.setAttribute("orientation", `0deg ${deg}deg 0deg`);
+        function wireViewerEvents(currentViewer) {
+          currentViewer.addEventListener("camera-change", updateHotspotScale);
+
+          currentViewer.addEventListener("ar-status", () => {
+            const status = currentViewer.getAttribute("ar-status");
+            if (status === "session-started" || status === "not-presenting") {
+              arRotate.value = "0";
+              applyModelYaw(0);
+            }
+          });
         }
 
-        arRotate.addEventListener("input", () => {
-          const yaw = parseFloat(arRotate.value);
-          applyModelYaw(yaw);
-        });
-
-        viewer.addEventListener("ar-status", () => {
-          const status = viewer.getAttribute("ar-status");
-          if (status === "session-started" || status === "not-presenting") {
-            arRotate.value = "0";
-            applyModelYaw(0);
-          }
-        });
+        function rebuildViewer() {
+          const newViewer = viewerTemplate.cloneNode(true);
+          newViewer.style.display = "none";
+          viewerHost.replaceChild(newViewer, viewer);
+          viewer = newViewer;
+          wireViewerEvents(viewer);
+          return viewer;
+        }
 
         function renderModelMenu() {
           const renderRow = (arr) =>
             arr.map((m) => {
               const cls = m.key === activeKey ? "model-btn active" : "model-btn";
-              return `<button class="${cls}" type="button" data-model="${m.key}">${m.label}</button>`;
+              const disabled = isSwitching ? "disabled" : "";
+              return `<button class="${cls}" type="button" data-model="${m.key}" ${disabled}>${m.label}</button>`;
             }).join("");
 
           modelMenu.innerHTML = `
@@ -739,49 +783,94 @@
           modelMenu.querySelectorAll("button[data-model]").forEach((btn) => {
             btn.addEventListener("click", () => {
               const key = btn.getAttribute("data-model");
-              selectModel(key);
+              if (key) selectModel(key);
             });
           });
         }
 
-        function selectModel(key) {
+        async function selectModel(key) {
+          if (isSwitching || key === activeKey) return;
+
           const m = MODELS.find((x) => x.key === key);
           if (!m) return;
+
+          isSwitching = true;
+          renderModelMenu();
 
           setError(null);
           activeKey = key;
           setUrlModelKey(key);
 
-          applyHotspotVisibilityFor(activeKey);
-
           landing.style.display = "none";
-          viewer.style.display = "block";
           topbar.style.display = "flex";
-          renderModelMenu();
 
-          viewer.removeAttribute("src");
-          viewer.removeAttribute("ios-src");
+          const loadToken = ++activeLoadToken;
 
-          requestAnimationFrame(() => {
-            viewer.setAttribute("src", m.glb);
-            if (isIOS) viewer.setAttribute("ios-src", m.usdz);
-          });
+          rebuildViewer();
+          viewer.style.display = "block";
+          applyHotspotVisibilityFor(activeKey);
+          refreshAllTunerSections();
 
-          viewer.addEventListener("load", () => {
+          arRotate.value = "0";
+          applyModelYaw(0);
+
+          if (switchDelayMs > 0) {
+            await sleep(switchDelayMs);
+            if (loadToken !== activeLoadToken) return;
+          }
+
+          const onLoad = () => {
+            if (loadToken !== activeLoadToken) return;
+
+            applyHotspotVisibilityFor(activeKey);
             applyHotspotPresetFor(activeKey);
-            initAllSections();
+            refreshAllTunerSections();
             updateHotspotScale();
-          }, { once: true });
 
-          viewer.addEventListener("error", (ev) => {
+            isSwitching = false;
+            renderModelMenu();
+          };
+
+          const onError = (ev) => {
+            if (loadToken !== activeLoadToken) return;
+
             const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
             setError(`Model failed to load.\nSelected: ${m.label}\nSRC: ${m.glb}\n${detail}`);
-          }, { once: true });
+
+            isSwitching = false;
+            renderModelMenu();
+          };
+
+          viewer.addEventListener("load", onLoad, { once: true });
+          viewer.addEventListener("error", onError, { once: true });
+
+          requestAnimationFrame(() => {
+            if (loadToken !== activeLoadToken) return;
+
+            viewer.setAttribute("src", m.glb);
+            if (isIOS) {
+              viewer.setAttribute("ios-src", m.usdz);
+            } else {
+              viewer.removeAttribute("ios-src");
+            }
+          });
         }
+
+        tunerToggle.addEventListener("click", () => {
+          tunerPanel.classList.toggle("is-open");
+        });
+
+        arRotate.addEventListener("input", () => {
+          const yaw = parseFloat(arRotate.value);
+          applyModelYaw(yaw);
+        });
 
         topbar.style.display = "none";
         viewer.style.display = "none";
         tunerPanel.classList.remove("is-open");
+
+        initTunerSectionsOnce();
+        wireViewerEvents(viewer);
 
         const requested = getRequestedModelKey();
         if (requested && MODELS.some((m) => m.key === requested)) {
@@ -789,8 +878,6 @@
         } else {
           selectModel("default");
         }
-
-        viewer.addEventListener("camera-change", updateHotspotScale);
       });
     </script>
   </body>
