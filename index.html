@@ -473,16 +473,6 @@
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const switchDelayMs = isIOS ? 250 : 0;
 
-	const arButton = document.getElementById("ar-button");
-
-	arButton.addEventListener("click", () => {
-  	  if (!isIOS) return;
-
-  	const m = MODELS.find(x => x.key === activeKey);
-  	if (!m) return;
-
-  	viewer.setAttribute("ios-src", m.usdz);
-
         const DEFAULT_MODEL = {
           key: "default",
           label: "Default",
@@ -587,6 +577,16 @@
         const viewerTemplate = viewer.cloneNode(true);
         let activeLoadToken = 0;
         let isSwitching = false;
+
+	const arButton = document.getElementById("ar-button");
+
+	arButton.addEventListener("click", () => {
+  	if (!isIOS) return;
+
+  	const m = MODELS.find((x) => x.key === activeKey);
+  	if (!m) return;
+
+  	viewer.setAttribute("ios-src", m.usdz);
 
         const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
