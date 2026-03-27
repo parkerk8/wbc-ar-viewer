@@ -425,7 +425,6 @@
         </button>
 
         <div id="ar-prompt">
-          <img src="hand.png" alt="Move phone to find surface" />
         </div>
 
         <button id="ar-failure">AR is not tracking!</button>
@@ -459,434 +458,431 @@
 
     <div id="errorbox"></div>
 
-    <script>
-      window.addEventListener("DOMContentLoaded", () => {
-        const tunerPanel = document.getElementById("hotspot-controls");
-        const tunerToggle = document.getElementById("tuner-toggle");
-        const arRotate = document.getElementById("ar-rotate");
-        const landing = document.getElementById("landing");
-        const topbar = document.getElementById("topbar");
-        const modelMenu = document.getElementById("model-menu");
-        const errorbox = document.getElementById("errorbox");
-        const viewerHost = document.getElementById("viewer-host");
-
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const switchDelayMs = isIOS ? 250 : 0;
-
-        const DEFAULT_MODEL = {
-          key: "default",
-          label: "Default",
-          glb: "./default.glb",
-          usdz: "./default.usdz"
-        };
-
-        const PHILS = [
-          { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb", usdz: "./neutrophil.usdz" },
-          { key: "basophil", label: "Basophil", glb: "./basophil.glb", usdz: "./basophil.usdz" },
-          { key: "eosinophil", label: "Eosinophil", glb: "./eosinophil.glb", usdz: "./eosinophil.usdz" }
-        ];
-
-        const CYTES = [
-          { key: "monocyte", label: "Monocyte", glb: "./monocyte.glb", usdz: "./monocyte.usdz" },
-          { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb", usdz: "./lymphocyte.usdz" }
-        ];
-
-        const MODELS = [DEFAULT_MODEL, ...PHILS, ...CYTES];
-
-        const DEFAULT_HOTSPOTS = [
-          "hotspot-default-rough-er",
-          "hotspot-default-smooth-er",
-          "hotspot-default-nucleus",
-          "hotspot-default-nucleolus",
-          "hotspot-default-mitochondria",
-          "hotspot-default-ribosome",
-          "hotspot-default-lysosome",
-          "hotspot-default-golgi",
-          "hotspot-default-membrane"
-        ];
-
-        const WBC_HOTSPOTS = [
-          "hotspot-nucleus",
-          "hotspot-golgi",
-          "hotspot-mito",
-          "hotspot-ribosome",
-          "hotspot-granules"
-        ];
-
-        const HOTSPOTS_ALL = [...DEFAULT_HOTSPOTS, ...WBC_HOTSPOTS];
-
-        const HOTSPOTS_ENABLED = {
-          default: [...DEFAULT_HOTSPOTS],
-          neutrophil: [...WBC_HOTSPOTS],
-          basophil: [...WBC_HOTSPOTS],
-          eosinophil: [...WBC_HOTSPOTS],
-          monocyte: [...WBC_HOTSPOTS],
-          lymphocyte: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome"]
-        };
-
-        const HOTSPOT_PRESETS = {
-          default: {
-            "hotspot-default-rough-er": [-0.800, 0.100, 0.700],
-            "hotspot-default-smooth-er": [-1.600, 0.100, 1.700],
-            "hotspot-default-nucleus": [-0.300, 1.000, -0.900],
-            "hotspot-default-nucleolus": [-0.300, 0.600, -0.400],
-            "hotspot-default-mitochondria": [-0.300, 0.100, 3.200],
-            "hotspot-default-ribosome": [-2.100, 0.100, 0.400],
-            "hotspot-default-lysosome": [2.000, 0.100, -0.100],
-            "hotspot-default-golgi": [1.000, 0.100, 1.800],
-            "hotspot-default-membrane": [0.000, -0.200, 3.900]
-          },
-          neutrophil: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi": [0.900, 0.600, -0.100],
-            "hotspot-mito": [3.600, 0.200, -3.600],
-            "hotspot-ribosome": [2.300, -0.200, -4.300],
-            "hotspot-granules": [-2.900, -1.600, 5.800]
-          },
-          basophil: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi": [0.900, -0.200, -0.100],
-            "hotspot-mito": [3.600, -0.700, -3.600],
-            "hotspot-ribosome": [3.800, -0.100, -7.100],
-            "hotspot-granules": [-4.200, 0.800, 3.900]
-          },
-          eosinophil: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi": [0.900, 0.600, -0.100],
-            "hotspot-mito": [3.600, 0.200, -3.600],
-            "hotspot-ribosome": [4.700, -2.400, -0.600],
-            "hotspot-granules": [-2.900, -1.600, 5.800]
-          },
-          monocyte: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi": [0.900, 0.600, -0.100],
-            "hotspot-mito": [3.600, 0.200, -3.600],
-            "hotspot-ribosome": [5.100, -0.800, -3.100],
-            "hotspot-granules": [-3.400, -1.800, 6.400]
-          },
-          lymphocyte: {
-            "hotspot-nucleus": [-1.300, 2.000, -2.200],
-            "hotspot-golgi": [-0.200, 1.900, -6.200],
-            "hotspot-mito": [3.500, -0.100, -5.600],
-            "hotspot-ribosome": [3.500, -2.100, -6.500]
-          }
-        };
-
-        let activeKey = null;
-        let viewer = document.getElementById("cellViewer");
-        const viewerTemplate = viewer.cloneNode(true);
-        let activeLoadToken = 0;
-        let isSwitching = false;
-
-	const arButton = document.getElementById("ar-button");
-
-	arButton.addEventListener("click", () => {
-  	if (!isIOS) return;
-
-  	const m = MODELS.find((x) => x.key === activeKey);
-  	if (!m) return;
-
-  	viewer.setAttribute("ios-src", m.usdz);
-
-        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
-        function setError(msg) {
-          if (!msg) {
-            errorbox.style.display = "none";
-            errorbox.textContent = "";
-            return;
-          }
-          errorbox.style.display = "block";
-          errorbox.textContent = msg;
-        }
-
-        function sleep(ms) {
-          return new Promise((resolve) => setTimeout(resolve, ms));
-        }
-
-        function parseDataPosition(el) {
-          const raw = (el?.getAttribute("data-position") || "").trim();
-          const parts = raw.split(/\s+/).map(Number);
-          if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) return parts;
-          return [0, 0, 0];
-        }
-
-        function getRequestedModelKey() {
-          const url = new URL(window.location.href);
-          const queryModel = (url.searchParams.get("model") || "").trim().toLowerCase();
-
-          const hash = (url.hash || "").replace(/^#/, "");
-          const hashModel = new URLSearchParams(hash).get("model");
-          const normalizedHashModel = (hashModel || "").trim().toLowerCase();
-
-          return queryModel || normalizedHashModel || null;
-        }
-
-        function setUrlModelKey(key) {
-          const url = new URL(window.location.href);
-          if (key) url.searchParams.set("model", key);
-          else url.searchParams.delete("model");
-          history.replaceState(null, "", url.toString());
-        }
-
-        function applyModelYaw(deg) {
-          if (!viewer) return;
-          viewer.setAttribute("orientation", `0deg ${deg}deg 0deg`);
-        }
-
-        function setHotspotPosition(hotspotId, x, y, z) {
-          const el = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
-          if (!el) return;
-
-          const slotName = el.getAttribute("slot");
-          const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
-
-          el.setAttribute("data-position", posString);
-
-          if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
-            viewer.updateHotspot({ name: slotName, position: posString });
-          }
-        }
-
-        function applyHotspotPresetFor(key) {
-          const preset = HOTSPOT_PRESETS[key] || {};
-          const enabled = new Set(HOTSPOTS_ENABLED[key] || HOTSPOTS_ALL);
-
-          Object.entries(preset).forEach(([hotspotId, xyz]) => {
-            if (!enabled.has(hotspotId)) return;
-            const [x, y, z] = xyz;
-            setHotspotPosition(hotspotId, x, y, z);
-          });
-        }
-
-        function setHotspotVisible(hotspotId, visible) {
-          const el = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
-          if (!el) return;
-          el.style.display = visible ? "" : "none";
-        }
-
-        function applyHotspotVisibilityFor(key) {
-          const enabled = new Set(HOTSPOTS_ENABLED[key] || []);
-          HOTSPOTS_ALL.forEach((id) => setHotspotVisible(id, enabled.has(id)));
-        }
-
-        function updateSectionReadout(sectionEl) {
-          const hotspotId = sectionEl.getAttribute("data-hotspot");
-          const hotspotEl = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
-          const readout = sectionEl.querySelector(".hotspot-readout");
-          const [x, y, z] = parseDataPosition(hotspotEl);
-          readout.textContent = `data-position="${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}"`;
-        }
-
-        function syncSectionFromHotspot(sectionEl) {
-          const hotspotId = sectionEl.getAttribute("data-hotspot");
-          const hotspotEl = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
-          const xSlider = sectionEl.querySelector(".hotspot-x");
-          const ySlider = sectionEl.querySelector(".hotspot-y");
-          const zSlider = sectionEl.querySelector(".hotspot-z");
-
-          if (!hotspotEl) {
-            sectionEl.style.display = "none";
-            return;
-          }
-
-          const visible = hotspotEl.style.display !== "none";
-          sectionEl.style.display = visible ? "" : "none";
-
-          if (!visible) return;
-
-          const [x, y, z] = parseDataPosition(hotspotEl);
-          xSlider.value = x;
-          ySlider.value = y;
-          zSlider.value = z;
-          updateSectionReadout(sectionEl);
-        }
-
-        function initTunerSectionsOnce() {
-          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach((section) => {
-            if (section.dataset.bound === "true") return;
-
-            const hotspotId = section.getAttribute("data-hotspot");
-            const xSlider = section.querySelector(".hotspot-x");
-            const ySlider = section.querySelector(".hotspot-y");
-            const zSlider = section.querySelector(".hotspot-z");
-
-            const update = () => {
-              const x = parseFloat(xSlider.value);
-              const y = parseFloat(ySlider.value);
-              const z = parseFloat(zSlider.value);
-              setHotspotPosition(hotspotId, x, y, z);
-              updateSectionReadout(section);
-            };
-
-            xSlider.addEventListener("input", update);
-            ySlider.addEventListener("input", update);
-            zSlider.addEventListener("input", update);
-
-            section.dataset.bound = "true";
-          });
-        }
-
-        function refreshAllTunerSections() {
-          document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(syncSectionFromHotspot);
-        }
-
-        function updateHotspotScale() {
-          if (!viewer) return;
-
-          const arStatus = viewer.getAttribute("ar-status");
-          if (arStatus && arStatus !== "not-presenting" && arStatus !== "failed") return;
-
-          if (typeof viewer.getCameraOrbit !== "function") return;
-
-          const orbit = viewer.getCameraOrbit();
-          const radius = orbit.radius;
-
-          const minRadius = 4;
-          const maxRadius = 18;
-          const t = clamp((radius - minRadius) / (maxRadius - minRadius), 0, 1);
-
-          const minScale = 1.0;
-          const maxScale = 2.2;
-          const scale = maxScale - (maxScale - minScale) * t;
-
-          viewer.querySelectorAll(".hotspot").forEach((el) => {
-            el.style.setProperty("--hotspot-scale", scale);
-          });
-        }
-
-        function wireViewerEvents(currentViewer) {
-          currentViewer.addEventListener("camera-change", updateHotspotScale);
-
-          currentViewer.addEventListener("ar-status", () => {
-            const status = currentViewer.getAttribute("ar-status");
-            if (status === "session-started" || status === "not-presenting") {
-              arRotate.value = "0";
-              applyModelYaw(0);
-            }
-          });
-        }
-
-        function rebuildViewer() {
-          const newViewer = viewerTemplate.cloneNode(true);
-          newViewer.style.display = "none";
-          viewerHost.replaceChild(newViewer, viewer);
-          viewer = newViewer;
-          wireViewerEvents(viewer);
-          return viewer;
-        }
-
-        function renderModelMenu() {
-          const renderRow = (arr) =>
-            arr.map((m) => {
-              const cls = m.key === activeKey ? "model-btn active" : "model-btn";
-              const disabled = isSwitching ? "disabled" : "";
-              return `<button class="${cls}" type="button" data-model="${m.key}" ${disabled}>${m.label}</button>`;
-            }).join("");
-
-          modelMenu.innerHTML = `
-            <div class="model-row">${renderRow([DEFAULT_MODEL])}</div>
-            <div class="model-row">${renderRow(PHILS)}</div>
-            <div class="model-row">${renderRow(CYTES)}</div>
-          `;
-
-          modelMenu.querySelectorAll("button[data-model]").forEach((btn) => {
-            btn.addEventListener("click", () => {
-              const key = btn.getAttribute("data-model");
-              if (key) selectModel(key);
-            });
-          });
-        }
-
-        async function selectModel(key) {
-          if (isSwitching || key === activeKey) return;
-
-          const m = MODELS.find((x) => x.key === key);
-          if (!m) return;
-
-          isSwitching = true;
-          renderModelMenu();
-
-          setError(null);
-          activeKey = key;
-          setUrlModelKey(key);
-
-          landing.style.display = "none";
-          topbar.style.display = "flex";
-
-          const loadToken = ++activeLoadToken;
-
-          rebuildViewer();
-          viewer.style.display = "block";
-          applyHotspotVisibilityFor(activeKey);
-          refreshAllTunerSections();
-
-          arRotate.value = "0";
-          applyModelYaw(0);
-
-          if (switchDelayMs > 0) {
-            await sleep(switchDelayMs);
-            if (loadToken !== activeLoadToken) return;
-          }
-
-          const onLoad = () => {
-            if (loadToken !== activeLoadToken) return;
-
-            applyHotspotVisibilityFor(activeKey);
-            applyHotspotPresetFor(activeKey);
-            refreshAllTunerSections();
-            updateHotspotScale();
-
-            isSwitching = false;
-            renderModelMenu();
-          };
-
-          const onError = (ev) => {
-            if (loadToken !== activeLoadToken) return;
-
-            const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
-            setError(`Model failed to load.\nSelected: ${m.label}\nSRC: ${m.glb}\n${detail}`);
-
-            isSwitching = false;
-            renderModelMenu();
-          };
-
-          viewer.addEventListener("load", onLoad, { once: true });
-          viewer.addEventListener("error", onError, { once: true });
-
-          requestAnimationFrame(() => {
-            if (loadToken !== activeLoadToken) return;
-
-	  viewer.setAttribute("src", m.glb);
-
-	  // NEVER set ios-src here
-	  viewer.removeAttribute("ios-src");
-          });
-        }
-
-        tunerToggle.addEventListener("click", () => {
-          tunerPanel.classList.toggle("is-open");
-        });
-
-        arRotate.addEventListener("input", () => {
-          const yaw = parseFloat(arRotate.value);
-          applyModelYaw(yaw);
-        });
-
-        topbar.style.display = "none";
-        viewer.style.display = "none";
-        tunerPanel.classList.remove("is-open");
-
-        initTunerSectionsOnce();
-        wireViewerEvents(viewer);
-
-        const requested = getRequestedModelKey();
-        if (requested && MODELS.some((m) => m.key === requested)) {
-          selectModel(requested);
-        } else {
-          selectModel("default");
-        }
+   <script>
+window.addEventListener("DOMContentLoaded", () => {
+  const tunerPanel = document.getElementById("hotspot-controls");
+  const tunerToggle = document.getElementById("tuner-toggle");
+  const arRotate = document.getElementById("ar-rotate");
+  const landing = document.getElementById("landing");
+  const topbar = document.getElementById("topbar");
+  const modelMenu = document.getElementById("model-menu");
+  const errorbox = document.getElementById("errorbox");
+  const viewerHost = document.getElementById("viewer-host");
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const switchDelayMs = isIOS ? 250 : 0;
+
+  const DEFAULT_MODEL = {
+    key: "default",
+    label: "Default",
+    glb: "./default.glb",
+    usdz: "./default.usdz"
+  };
+
+  const PHILS = [
+    { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb", usdz: "./neutrophil.usdz" },
+    { key: "basophil", label: "Basophil", glb: "./basophil.glb", usdz: "./basophil.usdz" },
+    { key: "eosinophil", label: "Eosinophil", glb: "./eosinophil.glb", usdz: "./eosinophil.usdz" }
+  ];
+
+  const CYTES = [
+    { key: "monocyte", label: "Monocyte", glb: "./monocyte.glb", usdz: "./monocyte.usdz" },
+    { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb", usdz: "./lymphocyte.usdz" }
+  ];
+
+  const MODELS = [DEFAULT_MODEL, ...PHILS, ...CYTES];
+
+  const DEFAULT_HOTSPOTS = [
+    "hotspot-default-rough-er",
+    "hotspot-default-smooth-er",
+    "hotspot-default-nucleus",
+    "hotspot-default-nucleolus",
+    "hotspot-default-mitochondria",
+    "hotspot-default-ribosome",
+    "hotspot-default-lysosome",
+    "hotspot-default-golgi",
+    "hotspot-default-membrane"
+  ];
+
+  const WBC_HOTSPOTS = [
+    "hotspot-nucleus",
+    "hotspot-golgi",
+    "hotspot-mito",
+    "hotspot-ribosome",
+    "hotspot-granules"
+  ];
+
+  const HOTSPOTS_ALL = [...DEFAULT_HOTSPOTS, ...WBC_HOTSPOTS];
+
+  const HOTSPOTS_ENABLED = {
+    default: [...DEFAULT_HOTSPOTS],
+    neutrophil: [...WBC_HOTSPOTS],
+    basophil: [...WBC_HOTSPOTS],
+    eosinophil: [...WBC_HOTSPOTS],
+    monocyte: [...WBC_HOTSPOTS],
+    lymphocyte: ["hotspot-nucleus", "hotspot-golgi", "hotspot-mito", "hotspot-ribosome"]
+  };
+
+  const HOTSPOT_PRESETS = {
+    default: {
+      "hotspot-default-rough-er": [-0.800, 0.100, 0.700],
+      "hotspot-default-smooth-er": [-1.600, 0.100, 1.700],
+      "hotspot-default-nucleus": [-0.300, 1.000, -0.900],
+      "hotspot-default-nucleolus": [-0.300, 0.600, -0.400],
+      "hotspot-default-mitochondria": [-0.300, 0.100, 3.200],
+      "hotspot-default-ribosome": [-2.100, 0.100, 0.400],
+      "hotspot-default-lysosome": [2.000, 0.100, -0.100],
+      "hotspot-default-golgi": [1.000, 0.100, 1.800],
+      "hotspot-default-membrane": [0.000, -0.200, 3.900]
+    },
+    neutrophil: {
+      "hotspot-nucleus": [-1.300, 2.000, -2.200],
+      "hotspot-golgi": [0.900, 0.600, -0.100],
+      "hotspot-mito": [3.600, 0.200, -3.600],
+      "hotspot-ribosome": [2.300, -0.200, -4.300],
+      "hotspot-granules": [-2.900, -1.600, 5.800]
+    },
+    basophil: {
+      "hotspot-nucleus": [-1.300, 2.000, -2.200],
+      "hotspot-golgi": [0.900, -0.200, -0.100],
+      "hotspot-mito": [3.600, -0.700, -3.600],
+      "hotspot-ribosome": [3.800, -0.100, -7.100],
+      "hotspot-granules": [-4.200, 0.800, 3.900]
+    },
+    eosinophil: {
+      "hotspot-nucleus": [-1.300, 2.000, -2.200],
+      "hotspot-golgi": [0.900, 0.600, -0.100],
+      "hotspot-mito": [3.600, 0.200, -3.600],
+      "hotspot-ribosome": [4.700, -2.400, -0.600],
+      "hotspot-granules": [-2.900, -1.600, 5.800]
+    },
+    monocyte: {
+      "hotspot-nucleus": [-1.300, 2.000, -2.200],
+      "hotspot-golgi": [0.900, 0.600, -0.100],
+      "hotspot-mito": [3.600, 0.200, -3.600],
+      "hotspot-ribosome": [5.100, -0.800, -3.100],
+      "hotspot-granules": [-3.400, -1.800, 6.400]
+    },
+    lymphocyte: {
+      "hotspot-nucleus": [-1.300, 2.000, -2.200],
+      "hotspot-golgi": [-0.200, 1.900, -6.200],
+      "hotspot-mito": [3.500, -0.100, -5.600],
+      "hotspot-ribosome": [3.500, -2.100, -6.500]
+    }
+  };
+
+  let activeKey = null;
+  let viewer = document.getElementById("cellViewer");
+  const viewerTemplate = viewer.cloneNode(true);
+  let activeLoadToken = 0;
+  let isSwitching = false;
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  function setError(msg) {
+    if (!msg) {
+      errorbox.style.display = "none";
+      errorbox.textContent = "";
+      return;
+    }
+    errorbox.style.display = "block";
+    errorbox.textContent = msg;
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function parseDataPosition(el) {
+    const raw = (el?.getAttribute("data-position") || "").trim();
+    const parts = raw.split(/\s+/).map(Number);
+    if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) return parts;
+    return [0, 0, 0];
+  }
+
+  function getRequestedModelKey() {
+    const url = new URL(window.location.href);
+    const queryModel = (url.searchParams.get("model") || "").trim().toLowerCase();
+
+    const hash = (url.hash || "").replace(/^#/, "");
+    const hashModel = new URLSearchParams(hash).get("model");
+    const normalizedHashModel = (hashModel || "").trim().toLowerCase();
+
+    return queryModel || normalizedHashModel || null;
+  }
+
+  function setUrlModelKey(key) {
+    const url = new URL(window.location.href);
+    if (key) url.searchParams.set("model", key);
+    else url.searchParams.delete("model");
+    history.replaceState(null, "", url.toString());
+  }
+
+  function applyModelYaw(deg) {
+    if (!viewer) return;
+    viewer.setAttribute("orientation", `0deg ${deg}deg 0deg`);
+  }
+
+  function setHotspotPosition(hotspotId, x, y, z) {
+    const el = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
+    if (!el) return;
+
+    const slotName = el.getAttribute("slot");
+    const posString = `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`;
+
+    el.setAttribute("data-position", posString);
+
+    if (viewer && typeof viewer.updateHotspot === "function" && slotName) {
+      viewer.updateHotspot({ name: slotName, position: posString });
+    }
+  }
+
+  function applyHotspotPresetFor(key) {
+    const preset = HOTSPOT_PRESETS[key] || {};
+    const enabled = new Set(HOTSPOTS_ENABLED[key] || HOTSPOTS_ALL);
+
+    Object.entries(preset).forEach(([hotspotId, xyz]) => {
+      if (!enabled.has(hotspotId)) return;
+      const [x, y, z] = xyz;
+      setHotspotPosition(hotspotId, x, y, z);
+    });
+  }
+
+  function setHotspotVisible(hotspotId, visible) {
+    const el = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
+    if (!el) return;
+    el.style.display = visible ? "" : "none";
+  }
+
+  function applyHotspotVisibilityFor(key) {
+    const enabled = new Set(HOTSPOTS_ENABLED[key] || []);
+    HOTSPOTS_ALL.forEach((id) => setHotspotVisible(id, enabled.has(id)));
+  }
+
+  function updateSectionReadout(sectionEl) {
+    const hotspotId = sectionEl.getAttribute("data-hotspot");
+    const hotspotEl = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
+    const readout = sectionEl.querySelector(".hotspot-readout");
+    const [x, y, z] = parseDataPosition(hotspotEl);
+    readout.textContent = `data-position="${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}"`;
+  }
+
+  function syncSectionFromHotspot(sectionEl) {
+    const hotspotId = sectionEl.getAttribute("data-hotspot");
+    const hotspotEl = viewer?.querySelector(`#${CSS.escape(hotspotId)}`);
+    const xSlider = sectionEl.querySelector(".hotspot-x");
+    const ySlider = sectionEl.querySelector(".hotspot-y");
+    const zSlider = sectionEl.querySelector(".hotspot-z");
+
+    if (!hotspotEl) {
+      sectionEl.style.display = "none";
+      return;
+    }
+
+    const visible = hotspotEl.style.display !== "none";
+    sectionEl.style.display = visible ? "" : "none";
+
+    if (!visible) return;
+
+    const [x, y, z] = parseDataPosition(hotspotEl);
+    xSlider.value = x;
+    ySlider.value = y;
+    zSlider.value = z;
+    updateSectionReadout(sectionEl);
+  }
+
+  function initTunerSectionsOnce() {
+    document.querySelectorAll("#hotspot-controls .hotspot-section").forEach((section) => {
+      if (section.dataset.bound === "true") return;
+
+      const hotspotId = section.getAttribute("data-hotspot");
+      const xSlider = section.querySelector(".hotspot-x");
+      const ySlider = section.querySelector(".hotspot-y");
+      const zSlider = section.querySelector(".hotspot-z");
+
+      const update = () => {
+        const x = parseFloat(xSlider.value);
+        const y = parseFloat(ySlider.value);
+        const z = parseFloat(zSlider.value);
+        setHotspotPosition(hotspotId, x, y, z);
+        updateSectionReadout(section);
+      };
+
+      xSlider.addEventListener("input", update);
+      ySlider.addEventListener("input", update);
+      zSlider.addEventListener("input", update);
+
+      section.dataset.bound = "true";
+    });
+  }
+
+  function refreshAllTunerSections() {
+    document.querySelectorAll("#hotspot-controls .hotspot-section").forEach(syncSectionFromHotspot);
+  }
+
+  function updateHotspotScale() {
+    if (!viewer) return;
+
+    const arStatus = viewer.getAttribute("ar-status");
+    if (arStatus && arStatus !== "not-presenting" && arStatus !== "failed") return;
+    if (typeof viewer.getCameraOrbit !== "function") return;
+
+    const orbit = viewer.getCameraOrbit();
+    const radius = orbit.radius;
+
+    const minRadius = 4;
+    const maxRadius = 18;
+    const t = clamp((radius - minRadius) / (maxRadius - minRadius), 0, 1);
+
+    const minScale = 1.0;
+    const maxScale = 2.2;
+    const scale = maxScale - (maxScale - minScale) * t;
+
+    viewer.querySelectorAll(".hotspot").forEach((el) => {
+      el.style.setProperty("--hotspot-scale", scale);
+    });
+  }
+
+  function wireViewerEvents(currentViewer) {
+    currentViewer.addEventListener("camera-change", updateHotspotScale);
+
+    currentViewer.addEventListener("ar-status", () => {
+      const status = currentViewer.getAttribute("ar-status");
+      if (status === "session-started" || status === "not-presenting") {
+        arRotate.value = "0";
+        applyModelYaw(0);
+      }
+    });
+  }
+
+  function rebuildViewer() {
+    const newViewer = viewerTemplate.cloneNode(true);
+    newViewer.style.display = "none";
+    viewerHost.replaceChild(newViewer, viewer);
+    viewer = newViewer;
+    wireViewerEvents(viewer);
+    return viewer;
+  }
+
+  function renderModelMenu() {
+    const renderRow = (arr) =>
+      arr.map((m) => {
+        const cls = m.key === activeKey ? "model-btn active" : "model-btn";
+        const disabled = isSwitching ? "disabled" : "";
+        return `<button class="${cls}" type="button" data-model="${m.key}" ${disabled}>${m.label}</button>`;
+      }).join("");
+
+    modelMenu.innerHTML = `
+      <div class="model-row">${renderRow([DEFAULT_MODEL])}</div>
+      <div class="model-row">${renderRow(PHILS)}</div>
+      <div class="model-row">${renderRow(CYTES)}</div>
+    `;
+
+    modelMenu.querySelectorAll("button[data-model]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-model");
+        if (key) selectModel(key);
       });
-    </script>
+    });
+  }
+
+  async function selectModel(key) {
+    if (isSwitching || key === activeKey) return;
+
+    const m = MODELS.find((x) => x.key === key);
+    if (!m) return;
+
+    isSwitching = true;
+    renderModelMenu();
+
+    setError(null);
+    activeKey = key;
+    setUrlModelKey(key);
+
+    landing.style.display = "none";
+    topbar.style.display = "flex";
+
+    const loadToken = ++activeLoadToken;
+
+    rebuildViewer();
+    viewer.style.display = "block";
+    applyHotspotVisibilityFor(activeKey);
+    refreshAllTunerSections();
+
+    arRotate.value = "0";
+    applyModelYaw(0);
+
+    if (switchDelayMs > 0) {
+      await sleep(switchDelayMs);
+      if (loadToken !== activeLoadToken) return;
+    }
+
+    const onLoad = () => {
+      if (loadToken !== activeLoadToken) return;
+
+      applyHotspotVisibilityFor(activeKey);
+      applyHotspotPresetFor(activeKey);
+      refreshAllTunerSections();
+      updateHotspotScale();
+
+      isSwitching = false;
+      renderModelMenu();
+    };
+
+    const onError = (ev) => {
+      if (loadToken !== activeLoadToken) return;
+
+      const detail = ev?.detail ? JSON.stringify(ev.detail) : "";
+      setError(`Model failed to load.\nSelected: ${m.label}\nSRC: ${m.glb}\n${detail}`);
+
+      isSwitching = false;
+      renderModelMenu();
+    };
+
+    viewer.addEventListener("load", onLoad, { once: true });
+    viewer.addEventListener("error", onError, { once: true });
+
+    requestAnimationFrame(() => {
+      if (loadToken !== activeLoadToken) return;
+
+      viewer.setAttribute("src", m.glb);
+      viewer.removeAttribute("ios-src");
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    const arButton = event.target.closest("#ar-button");
+    if (!arButton || !isIOS) return;
+
+    const m = MODELS.find((x) => x.key === activeKey);
+    if (!m || !viewer) return;
+
+    viewer.setAttribute("ios-src", m.usdz);
+  });
+
+  tunerToggle.addEventListener("click", () => {
+    tunerPanel.classList.toggle("is-open");
+  });
+
+  arRotate.addEventListener("input", () => {
+    const yaw = parseFloat(arRotate.value);
+    applyModelYaw(yaw);
+  });
+
+  topbar.style.display = "none";
+  viewer.style.display = "none";
+  tunerPanel.classList.remove("is-open");
+
+  initTunerSectionsOnce();
+  wireViewerEvents(viewer);
+
+  const requested = getRequestedModelKey();
+  if (requested && MODELS.some((m) => m.key === requested)) {
+    selectModel(requested);
+  } else {
+    selectModel("default");
+  }
+});
+</script>
   </body>
 </html>
