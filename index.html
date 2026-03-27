@@ -473,6 +473,16 @@
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const switchDelayMs = isIOS ? 250 : 0;
 
+	const arButton = document.getElementById("ar-button");
+
+	arButton.addEventListener("click", () => {
+  	  if (!isIOS) return;
+
+  	const m = MODELS.find(x => x.key === activeKey);
+  	if (!m) return;
+
+  	viewer.setAttribute("ios-src", m.usdz);
+
         const DEFAULT_MODEL = {
           key: "default",
           label: "Default",
@@ -847,12 +857,10 @@
           requestAnimationFrame(() => {
             if (loadToken !== activeLoadToken) return;
 
-            viewer.setAttribute("src", m.glb);
-            if (isIOS) {
-              viewer.setAttribute("ios-src", m.usdz);
-            } else {
-              viewer.removeAttribute("ios-src");
-            }
+	  viewer.setAttribute("src", m.glb);
+
+	  // NEVER set ios-src here
+	  viewer.removeAttribute("ios-src");
           });
         }
 
