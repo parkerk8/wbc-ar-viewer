@@ -476,18 +476,18 @@ window.addEventListener("DOMContentLoaded", () => {
     key: "default",
     label: "Default",
     glb: "./default.glb",
-    usdz: "./default.usdz"
+    //usdz: "./default.usdz"
   };
 
   const PHILS = [
-    { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb", usdz: "./neutrophil.usdz" },
-    { key: "basophil", label: "Basophil", glb: "./basophil.glb", usdz: "./basophil.usdz" },
-    { key: "eosinophil", label: "Eosinophil", glb: "./eosinophil.glb", usdz: "./eosinophil.usdz" }
+    { key: "neutrophil", label: "Neutrophil", glb: "./neutrophil.glb" },
+    { key: "basophil", label: "Basophil", glb: "./basophil.glb" },
+    { key: "eosinophil", label: "Eosinophil", glb: "./eosinophil.glb" }
   ];
 
   const CYTES = [
-    { key: "monocyte", label: "Monocyte", glb: "./monocyte.glb", usdz: "./monocyte.usdz" },
-    { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb", usdz: "./lymphocyte.usdz" }
+    { key: "monocyte", label: "Monocyte", glb: "./monocyte.glb" },
+    { key: "lymphocyte", label: "Lymphocyte", glb: "./lymphocyte.glb" }
   ];
 
   const MODELS = [DEFAULT_MODEL, ...PHILS, ...CYTES];
@@ -846,7 +846,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if (loadToken !== activeLoadToken) return;
 
       viewer.setAttribute("src", m.glb);
-      viewer.removeAttribute("ios-src");
+      //viewer.removeAttribute("ios-src");
     });
   }
 
@@ -857,7 +857,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const m = MODELS.find((x) => x.key === activeKey);
     if (!m || !viewer) return;
 
-    viewer.setAttribute("ios-src", m.usdz);
+    //viewer.setAttribute("ios-src", m.usdz);
   });
 
   tunerToggle.addEventListener("click", () => {
